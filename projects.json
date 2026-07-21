@@ -1,63 +1,40 @@
 [
   {
     "title": "BC Environment NLP Pipeline",
-    "desc": "Developed a comprehensive NLP pipeline for processing scanned environmental PDFs at the Government of British Columbia. Implemented document classification using regex patterns and BERT models, built duplicate detection with ROUGE and RapidFuzz algorithms, and integrated local LLM fallbacks with Ollama for robust processing capabilities. The system demonstrates strong performance in text metadata extraction, reliably detects potential duplicates, and makes conservative but highly accurate positive releasability predictions.",
+    "desc": "NLP pipeline for the Government of BC that classifies scanned environmental PDFs (regex + BERT), detects duplicates (ROUGE + RapidFuzz), and falls back to local LLMs via Ollama.",
+    "impact": "Reliable metadata extraction and cautious, accurate releasability predictions.",
+    "tech": ["Python", "BERT", "Ollama", "ROUGE", "RapidFuzz"],
     "links": [
-      {
-        "label": "Repository",
-        "href": "https://github.com/bcgov/nr-site-tagging-pilot"
-      },
-      {
-        "label": "Documentation",
-        "href": "https://github.com/bcgov/nr-site-tagging-pilot/blob/main/README.md"
-      }
-    ],
-    "image": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop",
-    "category": "NLP",
-    "impact": "Delivers strong metadata extraction, comprehensive duplicate detection, and cautious but highly accurate positive releasability predictions"
+      { "label": "Repository", "href": "https://github.com/bcgov/nr-site-tagging-pilot" },
+      { "label": "Docs", "href": "https://github.com/bcgov/nr-site-tagging-pilot/blob/main/README.md" }
+    ]
   },
   {
     "title": "Lay Summarization Pipeline",
-    "desc": "Built a modular biomedical lay-summarization system comparing zero-shot, few-shot, fine-tuned, and retrieval-augmented approaches. On limited hardware, abstract-only LLaMA2 provided the best overall balance of relevance and readability, while RAG improved factual grounding. The pipeline includes an evaluation harness for ROUGE, BLEU, BERTScore, FKGL, CLI, DCRS, and SummaC.",
+    "desc": "Biomedical lay-summarization system comparing zero-shot, few-shot, fine-tuned, and RAG approaches, with a full evaluation harness (ROUGE, BERTScore, SummaC, and more).",
+    "impact": "Abstract-only LLaMA2 beat fine-tuned variants on limited hardware; RAG gave the best factuality.",
+    "tech": ["Python", "LLaMA2", "RAG", "Transformers"],
     "links": [
-      {
-        "label": "Repository",
-        "href": "https://github.com/jnadal14/Lay_Summarization_LLM_Pipeline"
-      }
-    ],
-    "image": "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=300&fit=crop",
-    "category": "NLP",
-    "impact": "Abstract-only LLaMA2 outperformed fine-tuned variants on limited hardware, and the RAG variant achieved the strongest factuality by SummaC"
-  },
-  
-  {
-    "title": "Agentic Moderation and Detoxification Pipeline",
-    "desc": "Built an agentic workflow that routes each input through language detection, translation when needed, sentiment and toxicity classification, and conditional detoxification. The agent uses LangDetect for language ID, UBC NLP Toucan for translation, and IBM Granite for classification and rewriting. It returns rationales, structured outputs, and handles errors across modular stages with reproducible runs.",
-    "links": [
-      {
-        "label": "Repository",
-        "href": "https://github.com/jnadal14/Detoxification_LLM_Dataflow"
-      },
-      {
-        "label": "Paper",
-        "href": "https://github.com/jnadal14/Detoxification_LLM_Dataflow/blob/main/Final_Report.pdf"
-      }
-    ],
-    "image": "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop",
-    "category": "NLP",
-    "impact": "Multilingual moderation agent. Sentiment accuracy 0.650. Detox quality 7.7 out of 10."
+      { "label": "Repository", "href": "https://github.com/jnadal14/Lay_Summarization_LLM_Pipeline" }
+    ]
   },
   {
-    "title": "Movie Review Corpus and UI",
-    "desc": "Created a comprehensive movie review corpus with custom annotation schema and an intuitive exploration interface. Developed comparison frameworks for GPT-style annotations against human labels, providing insights into AI-human annotation alignment. The system supports large-scale sentiment analysis research.",
+    "title": "Agentic Moderation & Detoxification Pipeline",
+    "desc": "An agentic pipeline that detects language, translates, classifies sentiment and toxicity, and conditionally detoxifies text — using LangDetect, UBC NLP Toucan, and IBM Granite.",
+    "impact": "Multilingual moderation agent — 0.65 sentiment accuracy, 7.7 / 10 detox quality.",
+    "tech": ["Python", "LangChain", "IBM Granite", "Agents"],
     "links": [
-      {
-        "label": "Repository",
-        "href": "https://github.com/jnadal14/Movie_Review_Corpus_Annotation"
-      }
-    ],
-    "image": "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&h=300&fit=crop",
-    "category": "Data Science",
-    "impact": "Prototyped a sentiment analysis research tool."
+      { "label": "Repository", "href": "https://github.com/jnadal14/Detoxification_LLM_Dataflow" },
+      { "label": "Paper", "href": "https://github.com/jnadal14/Detoxification_LLM_Dataflow/blob/main/Final_Report.pdf" }
+    ]
+  },
+  {
+    "title": "Movie Review Corpus & UI",
+    "desc": "A movie-review corpus with a custom annotation schema and UI, plus a framework comparing GPT vs human labels for sentiment analysis.",
+    "impact": "Prototyped a sentiment-analysis research tool.",
+    "tech": ["Python", "Corpus", "Annotation", "GPT"],
+    "links": [
+      { "label": "Repository", "href": "https://github.com/jnadal14/Movie_Review_Corpus_Annotation" }
+    ]
   }
 ]

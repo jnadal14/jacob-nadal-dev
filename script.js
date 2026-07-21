@@ -1,78 +1,36 @@
-// ===== GLOBAL VARIABLES =====
-let particles = [];
-let animationId;
-let typingIndex = 0;
-let typingText = `import torch
-from transformers import pipeline
+// ===== HELPERS =====
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-class NLPProcessor:
-    def __init__(self):
-        self.classifier = pipeline(
-            "text-classification",
-            model="bert-base-uncased"
-        )
-    
-    def process_document(self, text):
-        # Extract key information
-        entities = self.extract_entities(text)
-        sentiment = self.analyze_sentiment(text)
-        
-        return {
-            "entities": entities,
-            "sentiment": sentiment,
-            "confidence": 0.95
-        }
-    
-    def extract_entities(self, text):
-        # Named entity recognition
-        return self.classifier(text)
-    
-    def analyze_sentiment(self, text):
-        # Sentiment analysis
-        return self.classifier(text)
-
-# Initialize processor
-processor = NLPProcessor()
-result = processor.process_document("Sample text")
-print("Processing complete!")`;
-
-// ===== UTILITY FUNCTIONS =====
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
-function throttle(func, limit) {
-  let inThrottle;
-  return function() {
-    const args = arguments;
-    const context = this;
-    if (!inThrottle) {
-      func.apply(context, args);
-      inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
+function throttle(fn, limit) {
+  let waiting = false;
+  return function (...args) {
+    if (!waiting) {
+      fn.apply(this, args);
+      waiting = true;
+      setTimeout(() => (waiting = false), limit);
     }
   };
 }
 
-// ===== LOADING SCREEN =====
-function initLoadingScreen() {
-  const loadingScreen = document.getElementById('loading-screen');
-  
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      loadingScreen.classList.add('hidden');
-      setTimeout(() => {
-        loadingScreen.style.display = 'none';
-      }, 500);
-    }, 1500);
+// ===== THEME TOGGLE =====
+function initTheme() {
+  const toggle = document.getElementById('theme-toggle');
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (!toggle) return;
+
+  const apply = (theme) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (meta) meta.setAttribute('content', theme === 'dark' ? '#0b0f18' : '#ffffff');
+  };
+
+  toggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    const next = current === 'dark' ? 'light' : 'dark';
+    apply(next);
+    try {
+      localStorage.setItem('theme', next);
+    } catch (e) {}
   });
 }
 
@@ -80,595 +38,676 @@ function initLoadingScreen() {
 function initNavigation() {
   const navbar = document.querySelector('.navbar');
   const navToggle = document.getElementById('nav-toggle');
-  const navLinks = document.querySelector('.nav-links');
-  const navLinksItems = document.querySelectorAll('.nav-link');
+  const navLinks = document.getElementById('nav-links');
+  const links = document.querySelectorAll('.nav-link');
 
-  // Navbar scroll effect
-  window.addEventListener('scroll', throttle(() => {
-    if (window.scrollY > 100) {
-      navbar.classList.add('scrolled');
-    } else {
-      navbar.classList.remove('scrolled');
-    }
-  }, 100));
+  window.addEventListener(
+    'scroll',
+    throttle(() => navbar.classList.toggle('scrolled', window.scrollY > 10), 100)
+  );
 
-  // Mobile menu toggle
-  navToggle.addEventListener('click', () => {
-    navToggle.classList.toggle('active');
-    navLinks.classList.toggle('active');
-  });
-
-  // Close mobile menu when clicking on a link
-  navLinksItems.forEach(link => {
-    link.addEventListener('click', () => {
-      navToggle.classList.remove('active');
-      navLinks.classList.remove('active');
+  if (navToggle && navLinks) {
+    navToggle.addEventListener('click', () => {
+      const open = navLinks.classList.toggle('active');
+      navToggle.classList.toggle('active', open);
+      navToggle.setAttribute('aria-expanded', String(open));
     });
-  });
+    links.forEach((link) =>
+      link.addEventListener('click', () => {
+        navLinks.classList.remove('active');
+        navToggle.classList.remove('active');
+        navToggle.setAttribute('aria-expanded', 'false');
+      })
+    );
+  }
 
-  // Active link highlighting
-  const sections = document.querySelectorAll('section[id]');
+  const sections = document.querySelectorAll('section[id], header[id]');
   const navItems = document.querySelectorAll('.nav-link[href^="#"]');
-
-  function updateActiveNav() {
-    const scrollPos = window.scrollY + 100;
-
-    sections.forEach(section => {
-      const sectionTop = section.offsetTop;
-      const sectionHeight = section.offsetHeight;
-      const sectionId = section.getAttribute('id');
-      const navItem = document.querySelector(`.nav-link[href="#${sectionId}"]`);
-
-      if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
-        navItems.forEach(item => item.classList.remove('active'));
-        if (navItem) navItem.classList.add('active');
-      }
-    });
-  }
-
-  window.addEventListener('scroll', throttle(updateActiveNav, 100));
-}
-
-// ===== PARTICLE SYSTEM =====
-class Particle {
-  constructor(canvas) {
-    this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
-    this.x = Math.random() * canvas.width;
-    this.y = Math.random() * canvas.height;
-    this.vx = (Math.random() - 0.5) * 0.5;
-    this.vy = (Math.random() - 0.5) * 0.5;
-    this.size = Math.random() * 2 + 1;
-    this.opacity = Math.random() * 0.5 + 0.2;
-    this.color = `rgba(99, 102, 241, ${this.opacity})`;
-  }
-
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
-
-    if (this.x < 0 || this.x > this.canvas.width) this.vx *= -1;
-    if (this.y < 0 || this.y > this.canvas.height) this.vy *= -1;
-  }
-
-  draw() {
-    this.ctx.beginPath();
-    this.ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    this.ctx.fillStyle = this.color;
-    this.ctx.fill();
-  }
-}
-
-function initParticles() {
-  const particlesContainer = document.getElementById('particles');
-  if (!particlesContainer) return;
-
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  canvas.style.position = 'absolute';
-  canvas.style.top = '0';
-  canvas.style.left = '0';
-  canvas.style.pointerEvents = 'none';
-  
-  particlesContainer.appendChild(canvas);
-
-  // Create particles
-  for (let i = 0; i < 50; i++) {
-    particles.push(new Particle(canvas));
-  }
-
-  function animateParticles() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    particles.forEach(particle => {
-      particle.update();
-      particle.draw();
-    });
-
-    // Draw connections
-    particles.forEach((particle, i) => {
-      particles.slice(i + 1).forEach(otherParticle => {
-        const dx = particle.x - otherParticle.x;
-        const dy = particle.y - otherParticle.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance < 100) {
-          ctx.beginPath();
-          ctx.moveTo(particle.x, particle.y);
-          ctx.lineTo(otherParticle.x, otherParticle.y);
-          ctx.strokeStyle = `rgba(99, 102, 241, ${0.1 * (1 - distance / 100)})`;
-          ctx.lineWidth = 1;
-          ctx.stroke();
+  window.addEventListener(
+    'scroll',
+    throttle(() => {
+      const scrollPos = window.scrollY + 120;
+      sections.forEach((section) => {
+        const id = section.getAttribute('id');
+        const item = document.querySelector(`.nav-link[href="#${id}"]`);
+        if (!item) return;
+        if (scrollPos >= section.offsetTop && scrollPos < section.offsetTop + section.offsetHeight) {
+          navItems.forEach((n) => n.classList.remove('active'));
+          item.classList.add('active');
         }
       });
-    });
-
-    animationId = requestAnimationFrame(animateParticles);
-  }
-
-  animateParticles();
-
-  // Resize handler
-  window.addEventListener('resize', debounce(() => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }, 250));
+    }, 120)
+  );
 }
 
-// ===== TYPING ANIMATION =====
-function initTypingAnimation() {
-  const typingElement = document.getElementById('typing-code');
-  if (!typingElement) return;
+// ===== PARALLAX ENGINE =====
+function initParallax() {
+  if (prefersReducedMotion) return;
+  const els = Array.from(document.querySelectorAll('[data-parallax]'));
+  if (!els.length) return;
+  let ticking = false;
+  const update = () => {
+    const vh = window.innerHeight;
+    els.forEach((el) => {
+      const speed = parseFloat(el.dataset.parallax) || 0;
+      const rect = el.getBoundingClientRect();
+      const center = rect.top + rect.height / 2;
+      const delta = center - vh / 2;
+      el.style.transform = `translate3d(0, ${(-delta * speed).toFixed(1)}px, 0)`;
+    });
+    ticking = false;
+  };
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (!ticking) {
+        requestAnimationFrame(update);
+        ticking = true;
+      }
+    },
+    { passive: true }
+  );
+  window.addEventListener('resize', update);
+  update();
+}
 
-  function typeText() {
-    if (typingIndex < typingText.length) {
-      typingElement.textContent += typingText.charAt(typingIndex);
-      typingIndex++;
-      setTimeout(typeText, 50);
+// ===== HERO SCROLL-AWAY =====
+function initHeroScroll() {
+  if (prefersReducedMotion) return;
+  const copy = document.querySelector('.hero-copy');
+  if (!copy) return;
+  let ticking = false;
+  const update = () => {
+    const y = window.scrollY;
+    const p = Math.min(y / 600, 1);
+    copy.style.transform = `translateY(${y * 0.14}px)`;
+    copy.style.opacity = String(1 - p * 0.9);
+    ticking = false;
+  };
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (!ticking) {
+        requestAnimationFrame(update);
+        ticking = true;
+      }
+    },
+    { passive: true }
+  );
+}
+
+// ===== HERO MOUSE PARALLAX =====
+function initHeroMouse() {
+  if (prefersReducedMotion || !isFinePointer) return;
+  const hero = document.getElementById('home');
+  const aurora = document.querySelector('.aurora');
+  const editor = document.getElementById('code-editor');
+  if (!hero) return;
+  hero.addEventListener('mousemove', (e) => {
+    const r = hero.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    if (aurora) aurora.style.transform = `translate(${x * 28}px, ${y * 28}px)`;
+    if (editor) {
+      editor.style.transform = `perspective(1400px) rotateY(${-4 + x * 7}deg) rotateX(${1.5 - y * 7}deg)`;
+    }
+  });
+  hero.addEventListener('mouseleave', () => {
+    if (aurora) aurora.style.transform = '';
+    if (editor) editor.style.transform = '';
+  });
+}
+
+// ===== DIRECTIONAL ENTRY REVEALS =====
+function initDirectionalReveals() {
+  document.querySelectorAll('.entry.reveal').forEach((el, i) => {
+    el.setAttribute('data-dir', i % 2 === 0 ? 'left' : 'right');
+  });
+}
+
+// ===== MARQUEE (seamless loop) =====
+function initMarquee() {
+  ['marquee-track', 'marquee-track-2'].forEach((id) => {
+    const track = document.getElementById(id);
+    if (!track) return;
+    track.innerHTML += track.innerHTML;
+  });
+}
+
+// ===== SCROLL PROGRESS =====
+function initScrollProgress() {
+  const bar = document.getElementById('scroll-progress');
+  if (!bar) return;
+  window.addEventListener(
+    'scroll',
+    throttle(() => {
+      const h = document.documentElement;
+      const scrolled = h.scrollTop / (h.scrollHeight - h.clientHeight || 1);
+      bar.style.transform = `scaleX(${Math.min(scrolled, 1)})`;
+    }, 16)
+  );
+}
+
+// ===== TEXT SCRAMBLE =====
+class Scramble {
+  constructor(el) {
+    this.el = el;
+    this.chars = '!<>-_\\/[]{}—=+*^?#________';
+    this.frame = 0;
+    this.queue = [];
+    this.frameRequest = null;
+    this.update = this.update.bind(this);
+  }
+  setText(newText) {
+    const oldText = this.el.textContent;
+    const length = Math.max(oldText.length, newText.length);
+    const promise = new Promise((resolve) => (this.resolve = resolve));
+    this.queue = [];
+    for (let i = 0; i < length; i++) {
+      const from = oldText[i] || '';
+      const to = newText[i] || '';
+      const start = Math.floor(Math.random() * 28);
+      const end = start + Math.floor(Math.random() * 28);
+      this.queue.push({ from, to, start, end, char: '' });
+    }
+    cancelAnimationFrame(this.frameRequest);
+    this.frame = 0;
+    this.update();
+    return promise;
+  }
+  update() {
+    let output = '';
+    let complete = 0;
+    for (let i = 0; i < this.queue.length; i++) {
+      let { from, to, start, end, char } = this.queue[i];
+      if (this.frame >= end) {
+        complete++;
+        output += to;
+      } else if (this.frame >= start) {
+        if (!char || Math.random() < 0.28) {
+          char = this.chars[Math.floor(Math.random() * this.chars.length)];
+          this.queue[i].char = char;
+        }
+        output += `<span class="scramble-char">${char}</span>`;
+      } else {
+        output += from;
+      }
+    }
+    this.el.innerHTML = output;
+    if (complete === this.queue.length) {
+      this.resolve && this.resolve();
     } else {
-      // Add blinking cursor
-      setInterval(() => {
-        typingElement.textContent = typingElement.textContent.endsWith('|') 
-          ? typingElement.textContent.slice(0, -1) 
-          : typingElement.textContent + '|';
-      }, 500);
+      this.frameRequest = requestAnimationFrame(this.update);
+      this.frame++;
     }
   }
-
-  // Start typing after a delay
-  setTimeout(typeText, 1000);
 }
 
-// ===== STATS COUNTER =====
-function initStatsCounter() {
-  const statNumbers = document.querySelectorAll('.stat-number');
-  
-  function animateCounter(element) {
-    const target = parseInt(element.getAttribute('data-target'));
-    const duration = 2000;
-    const step = target / (duration / 16);
-    let current = 0;
-
-    const timer = setInterval(() => {
-      current += step;
-      if (current >= target) {
-        current = target;
-        clearInterval(timer);
-      }
-      element.textContent = Math.floor(current);
-    }, 16);
+function initScramble() {
+  const el = document.querySelector('[data-scramble]');
+  if (!el) return;
+  const text = el.getAttribute('data-scramble');
+  if (prefersReducedMotion) {
+    el.textContent = text;
+    return;
   }
-
-  // Intersection Observer for stats
-  const statsObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const statNumber = entry.target;
-        animateCounter(statNumber);
-        statsObserver.unobserve(statNumber);
-      }
-    });
-  }, { threshold: 0.5 });
-
-  statNumbers.forEach(stat => statsObserver.observe(stat));
+  const fx = new Scramble(el);
+  setTimeout(() => fx.setText(text), 280);
+  el.addEventListener('mouseenter', () => fx.setText(text));
 }
 
-// ===== PROJECTS LOADING =====
-async function loadProjects() {
-  try {
-    // Bypass cache so local JSON edits show up immediately
-    const response = await fetch(`projects.json?v=${Date.now()}`, { cache: 'no-store' });
-    const projects = await response.json();
-    const projectsGrid = document.getElementById('projects-grid');
-    
-    if (!projectsGrid) return;
-
-    projectsGrid.innerHTML = projects.map(project => `
-      <article class="project-card" data-aos="fade-up">
-        <div class="project-header">
-          <h3 class="project-title">${project.title}</h3>
-        </div>
-        <p class="project-description">${project.desc}</p>
-        <div class="project-tech">
-          ${getProjectTech(project.title)}
-        </div>
-        <div class="project-links">
-          ${project.links.map(link => `
-            <a href="${link.href}" target="_blank" rel="noopener" class="btn btn-outline">
-              ${link.label}
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-              </svg>
-            </a>
-          `).join('')}
-        </div>
-      </article>
-    `).join('');
-
-    // Add animation delay to each project card
-    const projectCards = projectsGrid.querySelectorAll('.project-card');
-    projectCards.forEach((card, index) => {
-      card.style.animationDelay = `${index * 0.1}s`;
-    });
-
-    // Expose projects for client-side RAG (chatbot)
-    window.__projectsData = projects;
-    document.dispatchEvent(new CustomEvent('projectsLoaded', { detail: projects }));
-
-  } catch (error) {
-    console.error('Error loading projects:', error);
+// ===== CODE EDITOR TYPING REVEAL =====
+function initCodeReveal() {
+  const editor = document.getElementById('editor-body');
+  if (!editor) return;
+  const lines = Array.from(editor.querySelectorAll('.code-line'));
+  if (prefersReducedMotion) {
+    lines.forEach((l) => l.classList.add('typed'));
+    return;
   }
-}
+  const caret = document.createElement('span');
+  caret.className = 'editor-caret';
 
-function getProjectTech(projectTitle) {
-  const techMap = {
-    'BC Environment NLP Pipeline': ['Python', 'BERT', 'NLP', 'Ollama', 'ROUGE'],
-    'Lay Summarisation Pipeline': ['Python', 'Transformers', 'Biomedical', 'Evaluation'],
-    'Detoxification LLM Dataflow': ['Python', 'Data Curation', 'Toxicity', 'Workflow'],
-    'Movie Review Corpus and UI': ['Python', 'Corpus', 'Annotation', 'UI', 'GPT']
+  let i = 0;
+  const revealNext = () => {
+    if (i >= lines.length) {
+      lines[lines.length - 1].querySelector('.code-txt').appendChild(caret);
+      return;
+    }
+    const line = lines[i];
+    line.classList.add('typed');
+    if (i > 0) {
+      const prevCaret = lines[i - 1].querySelector('.editor-caret');
+      if (prevCaret) prevCaret.remove();
+    }
+    line.querySelector('.code-txt').appendChild(caret);
+    i++;
+    setTimeout(revealNext, 120);
   };
-
-  const tech = techMap[projectTitle] || ['Python', 'Machine Learning'];
-  return tech.map(t => `<span class="tech-tag">${t}</span>`).join('');
+  setTimeout(revealNext, 400);
 }
 
-// ===== SKILLS ANIMATION =====
-function initSkillsAnimation() {
-  const skillBars = document.querySelectorAll('.skill-bar');
-  
-  const skillsObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const skillBar = entry.target;
-        const level = skillBar.getAttribute('data-level');
-        skillBar.style.transform = `scaleX(${level / 100})`;
-        skillsObserver.unobserve(skillBar);
-      }
-    });
-  }, { threshold: 0.5 });
-
-  skillBars.forEach(bar => skillsObserver.observe(bar));
+// ===== COUNT UP =====
+function animateCount(el) {
+  const target = parseInt(el.getAttribute('data-count'), 10);
+  const suffix = el.getAttribute('data-suffix') || '';
+  if (prefersReducedMotion) {
+    el.textContent = target.toLocaleString() + suffix;
+    return;
+  }
+  const duration = 1200;
+  const start = performance.now();
+  const step = (now) => {
+    const p = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.floor(eased * target).toLocaleString() + (p === 1 ? suffix : '');
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 
-// ===== SMOOTH SCROLLING =====
-function initSmoothScrolling() {
-  const links = document.querySelectorAll('a[href^="#"]');
-  
-  links.forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const targetId = link.getAttribute('href');
-      const targetSection = document.querySelector(targetId);
-      
-      if (targetSection) {
-        const offsetTop = targetSection.offsetTop - 80; // Account for fixed header
-        window.scrollTo({
-          top: offsetTop,
-          behavior: 'smooth'
-        });
+// ===== SPLIT TITLES =====
+function initSplitTitles() {
+  document.querySelectorAll('[data-split]').forEach((title) => {
+    const words = title.textContent.split(' ');
+    title.innerHTML = words
+      .map((w, idx) => `<span class="split-word" style="transition-delay:${idx * 55}ms">${w}</span>`)
+      .join(' ');
+  });
+}
+
+// ===== STAGGER INDICES =====
+// Assign --i to direct .reveal children of [data-stagger] groups for cascading motion
+function initStaggerIndices() {
+  document.querySelectorAll('[data-stagger]').forEach((group) => {
+    let i = 0;
+    Array.from(group.children).forEach((child) => {
+      if (child.classList.contains('reveal')) {
+        child.style.setProperty('--i', i);
+        i += 1;
       }
     });
   });
+}
+
+// ===== SCROLL REVEAL =====
+let revealObserver;
+let revealWave = 0;
+function initReveal() {
+  if (!revealObserver) {
+    revealObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const el = entry.target;
+          // Cascade newly entering items so batches don't all snap at once
+          if (!el.style.getPropertyValue('--i')) {
+            el.style.setProperty('--i', String(revealWave % 5));
+            revealWave += 1;
+          }
+          el.classList.add('in-view');
+          const counter = el.querySelector('[data-count]');
+          if (counter && !counter.dataset.done) {
+            counter.dataset.done = '1';
+            animateCount(counter);
+          }
+          revealObserver.unobserve(el);
+        });
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
+    );
+  }
+  document.querySelectorAll('.reveal:not(.in-view)').forEach((el) => revealObserver.observe(el));
+}
+
+// ===== TIMELINE DRAW =====
+function initTimeline() {
+  const timeline = document.getElementById('experience-timeline');
+  if (!timeline) return;
+  const obs = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          timeline.classList.add('in-view');
+          obs.unobserve(timeline);
+        }
+      });
+    },
+    { threshold: 0.15 }
+  );
+  obs.observe(timeline);
+}
+
+// ===== HIGHLIGHT SPOTLIGHT =====
+function initHighlightSpotlight() {
+  document.querySelectorAll('.highlight').forEach((card) => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      card.style.setProperty('--mx', `${e.clientX - rect.left}px`);
+      card.style.setProperty('--my', `${e.clientY - rect.top}px`);
+    });
+  });
+}
+
+// ===== SECTION SNAP (CSS-only scroll — JS only for rail + click nav) =====
+function initSnapScroll() {
+  const panels = Array.from(document.querySelectorAll('.snap-panel'));
+  const railItems = Array.from(document.querySelectorAll('.snap-rail-item'));
+  if (!panels.length) return;
+
+  let scrolling = false;
+
+  const setActiveById = (id) => {
+    railItems.forEach((item) => {
+      item.classList.toggle('is-active', item.getAttribute('data-snap') === id);
+    });
+    panels.forEach((p) => p.classList.toggle('is-active-panel', p.id === id));
+  };
+
+  const headerOffset = () => {
+    const nav = document.querySelector('.navbar');
+    return (nav ? nav.offsetHeight : 68) + 8;
+  };
+
+  const scrollToPanel = (panel) => {
+    if (!panel || scrolling) return;
+    scrolling = true;
+    // Temporarily kill snap so smooth scroll doesn't fight it
+    document.documentElement.classList.add('is-scrolling');
+
+    const top = panel.getBoundingClientRect().top + window.scrollY - headerOffset();
+    window.scrollTo({
+      top: Math.max(0, top),
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+    });
+
+    setActiveById(panel.id);
+
+    window.setTimeout(() => {
+      document.documentElement.classList.remove('is-scrolling');
+      // Land exactly on the snap point
+      const settled = panel.getBoundingClientRect().top + window.scrollY - headerOffset();
+      window.scrollTo({ top: Math.max(0, settled), behavior: 'auto' });
+      scrolling = false;
+    }, prefersReducedMotion ? 50 : 700);
+  };
+
+  // Rail + in-page links — no wheel hijacking (that was the glitch)
+  const onNavClick = (e) => {
+    const link = e.currentTarget;
+    const id = link.getAttribute('data-snap') || link.getAttribute('href')?.slice(1);
+    if (!id) return;
+    const panel = panels.find((p) => p.id === id);
+    if (!panel) return;
+    e.preventDefault();
+    scrollToPanel(panel);
+  };
+
+  railItems.forEach((item) => item.addEventListener('click', onNavClick));
+  document.querySelectorAll('a[href^="#"]').forEach((link) => {
+    const id = link.getAttribute('href')?.slice(1);
+    if (id && panels.some((p) => p.id === id)) {
+      link.addEventListener('click', onNavClick);
+    }
+  });
+
+  // Lightweight scroll-spy for the rail (read-only — never calls scrollTo)
+  const syncRail = throttle(() => {
+    if (scrolling) return;
+    let bestId = panels[0]?.id;
+    let bestDist = Infinity;
+    panels.forEach((p) => {
+      const d = Math.abs(p.getBoundingClientRect().top - headerOffset());
+      if (d < bestDist) {
+        bestDist = d;
+        bestId = p.id;
+      }
+    });
+    if (bestId) setActiveById(bestId);
+  }, 100);
+
+  window.addEventListener('scroll', syncRail, { passive: true });
+  document.body.classList.add('has-snap');
+  setActiveById(panels[0]?.id);
+}
+
+// ===== FORCE TOP ON LOAD / REFRESH =====
+function initScrollToTop() {
+  try {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  } catch (e) {}
+  window.scrollTo(0, 0);
+  // Catch late browser restoration / hash jumps
+  requestAnimationFrame(() => window.scrollTo(0, 0));
+  window.addEventListener('load', () => window.scrollTo(0, 0), { once: true });
+}
+
+// ===== MAGNETIC BUTTONS =====
+function initMagnetic() {
+  if (prefersReducedMotion || !isFinePointer) return;
+  document.querySelectorAll('.magnetic').forEach((el) => {
+    const strength = 0.35;
+    el.addEventListener('mousemove', (e) => {
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      el.style.transform = `translate(${x * strength}px, ${y * strength}px)`;
+    });
+    el.addEventListener('mouseleave', () => {
+      el.style.transform = 'translate(0, 0)';
+    });
+  });
+}
+
+// ===== CUSTOM CURSOR =====
+function initCursor() {
+  if (prefersReducedMotion || !isFinePointer) return;
+  const dot = document.createElement('div');
+  const ring = document.createElement('div');
+  dot.className = 'cursor-dot';
+  ring.className = 'cursor-ring';
+  document.body.append(dot, ring);
+  document.body.classList.add('has-custom-cursor');
+
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', (e) => {
+    mx = e.clientX;
+    my = e.clientY;
+    dot.style.opacity = ring.style.opacity = '1';
+    dot.style.left = mx + 'px';
+    dot.style.top = my + 'px';
+  });
+  document.addEventListener('mouseleave', () => {
+    dot.style.opacity = ring.style.opacity = '0';
+  });
+
+  const loop = () => {
+    rx += (mx - rx) * 0.18;
+    ry += (my - ry) * 0.18;
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
+    requestAnimationFrame(loop);
+  };
+  loop();
+
+  const interactive = 'a, button, input, textarea, .project-card, .skill-list span';
+  document.querySelectorAll(interactive).forEach((el) => {
+    el.addEventListener('mouseenter', () => ring.classList.add('hovering'));
+    el.addEventListener('mouseleave', () => ring.classList.remove('hovering'));
+  });
+}
+
+// ===== PROJECT CARD SPOTLIGHT =====
+function bindCardSpotlight(scope) {
+  scope.querySelectorAll('.project-card').forEach((card) => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      card.style.setProperty('--mx', `${e.clientX - rect.left}px`);
+      card.style.setProperty('--my', `${e.clientY - rect.top}px`);
+    });
+  });
+}
+
+// ===== PROJECTS =====
+async function loadProjects() {
+  const grid = document.getElementById('projects-grid');
+  if (!grid) return;
+  try {
+    const response = await fetch(`projects.json?v=${Date.now()}`, { cache: 'no-store' });
+    const projects = await response.json();
+    grid.innerHTML = projects
+      .map(
+        (project, idx) => `
+      <article class="project-card reveal">
+        <div class="project-card-main">
+          <div class="project-index">0${idx + 1} / 0${projects.length}</div>
+          <h3 class="project-title">${project.title}</h3>
+          <p class="project-description">${project.desc}</p>
+        </div>
+        <div class="project-card-side">
+          ${
+            project.impact
+              ? `<div class="project-impact">
+                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                   <span>${project.impact}</span>
+                 </div>`
+              : ''
+          }
+          <div class="project-tech">
+            ${(project.tech || []).map((t) => `<span class="tag">${t}</span>`).join('')}
+          </div>
+          <div class="project-links">
+            ${project.links
+              .map(
+                (link) => `
+              <a href="${link.href}" target="_blank" rel="noopener" class="project-link">
+                ${link.label}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+              </a>`
+              )
+              .join('')}
+          </div>
+        </div>
+      </article>`
+      )
+      .join('');
+
+    grid.querySelectorAll('.project-card').forEach((card, i) => {
+      card.style.setProperty('--i', i);
+    });
+
+    initStaggerIndices();
+    initReveal();
+    bindCardSpotlight(grid);
+  } catch (error) {
+    console.error('Error loading projects:', error);
+    grid.innerHTML =
+      '<p style="color: var(--ink-500);">Projects are temporarily unavailable. See my work on <a href="https://github.com/jnadal14" target="_blank" rel="noopener">GitHub</a>.</p>';
+  }
 }
 
 // ===== BACK TO TOP =====
 function initBackToTop() {
-  const backToTopBtn = document.getElementById('back-to-top');
-  
-  if (!backToTopBtn) return;
-
-  window.addEventListener('scroll', throttle(() => {
-    if (window.scrollY > 500) {
-      backToTopBtn.classList.add('visible');
-    } else {
-      backToTopBtn.classList.remove('visible');
-    }
-  }, 100));
-
-  backToTopBtn.addEventListener('click', () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-  });
+  const btn = document.getElementById('back-to-top');
+  if (!btn) return;
+  window.addEventListener(
+    'scroll',
+    throttle(() => btn.classList.toggle('visible', window.scrollY > 600), 100)
+  );
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
 
-// ===== FORM HANDLING =====
+// ===== CONTACT FORM =====
 function initContactForm() {
   const form = document.querySelector('.contact-form');
-  
   if (!form) return;
-
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
     const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    
-    // Show loading state
-    submitBtn.innerHTML = `
-      <span>Sending...</span>
-      <svg class="btn-icon animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21 12a9 9 0 11-6.219-8.56"/>
-      </svg>
-    `;
+    const original = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span>Sending…</span>';
     submitBtn.disabled = true;
-
     try {
-      const formData = new FormData(form);
       const response = await fetch(form.action, {
         method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json'
-        }
+        body: new FormData(form),
+        headers: { Accept: 'application/json' },
       });
-
-      if (response.ok) {
-        showNotification('Message sent successfully!', 'success');
-        form.reset();
-      } else {
-        throw new Error('Failed to send message');
-      }
+      if (!response.ok) throw new Error('Request failed');
+      showNotification('Thanks — your message has been sent.', 'success');
+      form.reset();
     } catch (error) {
-      showNotification('Failed to send message. Please try again.', 'error');
+      showNotification('Something went wrong. Please email me directly.', 'error');
     } finally {
-      submitBtn.innerHTML = originalText;
+      submitBtn.innerHTML = original;
       submitBtn.disabled = false;
     }
   });
 }
 
-// ===== NOTIFICATIONS =====
 function showNotification(message, type = 'info') {
-  const notification = document.createElement('div');
-  notification.className = `notification notification-${type}`;
-  notification.innerHTML = `
-    <div class="notification-content">
-      <span class="notification-message">${message}</span>
-      <button class="notification-close">&times;</button>
-    </div>
+  const el = document.createElement('div');
+  el.textContent = message;
+  el.style.cssText = `
+    position: fixed; top: 20px; right: 20px; z-index: 10000;
+    padding: 0.85rem 1.25rem; border-radius: 0.625rem; color: #fff;
+    font-size: 0.9rem; font-weight: 500; box-shadow: 0 16px 40px rgba(15,23,42,0.25);
+    background: ${type === 'success' ? '#16a34a' : type === 'error' ? '#dc2626' : '#2563eb'};
+    transform: translateX(120%); transition: transform 0.3s ease;
   `;
-
-  // Add styles
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#6366f1'};
-    color: white;
-    padding: 1rem 1.5rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    z-index: 10000;
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
-  `;
-
-  document.body.appendChild(notification);
-
-  // Animate in
+  document.body.appendChild(el);
+  requestAnimationFrame(() => (el.style.transform = 'translateX(0)'));
   setTimeout(() => {
-    notification.style.transform = 'translateX(0)';
-  }, 100);
-
-  // Close button
-  const closeBtn = notification.querySelector('.notification-close');
-  closeBtn.addEventListener('click', () => {
-    notification.style.transform = 'translateX(100%)';
-    setTimeout(() => {
-      document.body.removeChild(notification);
-    }, 300);
-  });
-
-  // Auto remove after 5 seconds
-  setTimeout(() => {
-    if (document.body.contains(notification)) {
-      notification.style.transform = 'translateX(100%)';
-      setTimeout(() => {
-        if (document.body.contains(notification)) {
-          document.body.removeChild(notification);
-        }
-      }, 300);
-    }
-  }, 5000);
+    el.style.transform = 'translateX(120%)';
+    setTimeout(() => el.remove(), 350);
+  }, 4500);
 }
 
-// ===== INTERSECTION OBSERVER FOR ANIMATIONS =====
-function initScrollAnimations() {
-  const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-  };
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.style.opacity = '1';
-        entry.target.style.transform = 'translateY(0)';
-      }
-    });
-  }, observerOptions);
-
-  // Observe all sections and cards
-  const animatedElements = document.querySelectorAll('.section, .project-card, .timeline-item, .skill-item, .contact-item');
-  animatedElements.forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(30px)';
-    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-    observer.observe(el);
-  });
-}
-
-// ===== CURSOR EFFECT =====
-function initCursorEffect() {
-  const cursor = document.createElement('div');
-  cursor.className = 'custom-cursor';
-  cursor.style.cssText = `
-    position: fixed;
-    width: 20px;
-    height: 20px;
-    background: var(--primary);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 9999;
-    mix-blend-mode: difference;
-    transition: transform 0.1s ease;
-    opacity: 0;
-  `;
-  
-  document.body.appendChild(cursor);
-
-  let mouseX = 0;
-  let mouseY = 0;
-  let cursorX = 0;
-  let cursorY = 0;
-
-  document.addEventListener('mousemove', (e) => {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-    cursor.style.opacity = '1';
-  });
-
-  function animateCursor() {
-    cursorX += (mouseX - cursorX) * 0.1;
-    cursorY += (mouseY - cursorY) * 0.1;
-    
-    cursor.style.left = cursorX - 10 + 'px';
-    cursor.style.top = cursorY - 10 + 'px';
-    
-    requestAnimationFrame(animateCursor);
-  }
-  
-  animateCursor();
-
-  // Hide cursor when leaving window
-  document.addEventListener('mouseleave', () => {
-    cursor.style.opacity = '0';
-  });
-}
-
-// ===== YEAR UPDATER =====
+// ===== YEAR =====
 function updateYear() {
-  const yearElement = document.getElementById('year');
-  if (yearElement) {
-    yearElement.textContent = new Date().getFullYear();
+  const el = document.getElementById('year');
+  if (el) el.textContent = new Date().getFullYear();
+}
+
+// ===== LEGACY SERVICE WORKER CLEANUP =====
+function cleanupServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((r) => r.unregister()));
+  }
+  if ('caches' in window) {
+    caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
   }
 }
 
-// ===== INITIALIZATION =====
+// ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
-  initLoadingScreen();
+  initScrollToTop();
+  initTheme();
   initNavigation();
-  initParticles();
-  initTypingAnimation();
-  // Stats removed
+  initMarquee();
+  initScrollProgress();
+  initSplitTitles();
+  initScramble();
+  initCodeReveal();
+  initDirectionalReveals();
+  initStaggerIndices();
   loadProjects();
-  initSkillsAnimation();
-  initSmoothScrolling();
   initBackToTop();
   initContactForm();
-  initScrollAnimations();
-  initCursorEffect();
+  initMagnetic();
+  initCursor();
+  initParallax();
+  initHeroScroll();
+  initHeroMouse();
+  initTimeline();
+  initHighlightSpotlight();
+  initSnapScroll();
+  initReveal();
   updateYear();
-});
-
-// ===== CLEANUP =====
-window.addEventListener('beforeunload', () => {
-  if (animationId) {
-    cancelAnimationFrame(animationId);
-  }
-});
-
-// ===== PERFORMANCE OPTIMIZATION =====
-// Preload critical resources
-function preloadResources() {
-  const criticalImages = [
-    'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=1200&h=630&fit=crop'
-  ];
-
-  criticalImages.forEach(src => {
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'image';
-    link.href = src;
-    document.head.appendChild(link);
+  cleanupServiceWorker();
+  // Soft boot: drop preload, then kick hero entrance a beat later
+  requestAnimationFrame(() => {
+    document.body.classList.remove('preload');
+    setTimeout(() => document.body.classList.add('is-ready'), prefersReducedMotion ? 0 : 80);
   });
-}
-
-// Service Worker registration with aggressive update
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js?v=1.0.5')
-      .then(registration => {
-        // Attempt immediate update
-        registration.update();
-
-        // If there's an updated worker waiting, activate it
-        if (registration.waiting) {
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        }
-
-        // When a new worker is found, ask it to skip waiting once installed
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          if (!newWorker) return;
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              newWorker.postMessage({ type: 'SKIP_WAITING' });
-            }
-          });
-        });
-      })
-      .catch(error => {
-        console.log('SW registration failed: ', error);
-      });
-
-    // Reload the page when the active service worker changes
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      window.location.reload();
-    });
-  });
-}
-
-// ===== EXPORT FOR MODULE USE =====
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    initLoadingScreen,
-    initNavigation,
-    initParticles,
-    initTypingAnimation,
-    initStatsCounter,
-    loadProjects,
-    initSkillsAnimation,
-    initSmoothScrolling,
-    initBackToTop,
-    initContactForm,
-    initScrollAnimations,
-    initCursorEffect,
-    updateYear
-  };
-}
+});
