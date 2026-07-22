@@ -25,10 +25,16 @@ function initNavigation() {
   const navLinks = document.getElementById('nav-links');
   const links = document.querySelectorAll('.nav-link');
 
-  window.addEventListener(
-    'scroll',
-    throttle(() => navbar.classList.toggle('scrolled', window.scrollY > 10), 100)
-  );
+  // Skip scroll-driven nav chrome on touch — offsetTop loops stutter iOS scroll
+  if (!isTouch && navbar) {
+    window.addEventListener(
+      'scroll',
+      throttle(() => navbar.classList.toggle('scrolled', window.scrollY > 10), 100),
+      { passive: true }
+    );
+  } else if (navbar) {
+    navbar.classList.add('scrolled');
+  }
 
   if (navToggle && navLinks) {
     navToggle.addEventListener('click', () => {
@@ -45,6 +51,8 @@ function initNavigation() {
     );
   }
 
+  if (isTouch) return;
+
   const sections = document.querySelectorAll('section[id], header[id]');
   const navItems = document.querySelectorAll('.nav-link[href^="#"]');
   window.addEventListener(
@@ -60,7 +68,8 @@ function initNavigation() {
           item.classList.add('active');
         }
       });
-    }, 120)
+    }, 120),
+    { passive: true }
   );
 }
 
@@ -395,9 +404,10 @@ function initSectionNav() {
   const scrollToPanel = (panel) => {
     if (!panel) return;
     const top = panel.getBoundingClientRect().top + window.scrollY - headerOffset();
+    // Instant jump on touch — smooth scroll fights the compositor on iOS
     window.scrollTo({
       top: Math.max(0, top),
-      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      behavior: prefersReducedMotion || isTouch ? 'auto' : 'smooth',
     });
     setActiveById(panel.id);
   };
@@ -419,6 +429,12 @@ function initSectionNav() {
       link.addEventListener('click', onNavClick);
     }
   });
+
+  // Rail sync is desktop-only (rail hidden on touch; getBoundingClientRect on scroll = jank)
+  if (isTouch) {
+    setActiveById(panels[0]?.id);
+    return;
+  }
 
   const syncRail = throttle(() => {
     let bestId = panels[0]?.id;
@@ -448,9 +464,10 @@ function initScrollToTop() {
   const toTop = () => window.scrollTo(0, 0);
   toTop();
   requestAnimationFrame(toTop);
-  window.addEventListener('load', toTop, { once: true });
-  // iOS Safari often restores scroll after paint
-  [0, 50, 150, 400].forEach((ms) => setTimeout(toTop, ms));
+  // Fewer resets on touch so early user scroll isn't yanked back to top
+  const delays = isTouch ? [0, 80] : [0, 50, 150, 400];
+  delays.forEach((ms) => setTimeout(toTop, ms));
+  if (!isTouch) window.addEventListener('load', toTop, { once: true });
 }
 
 // ===== MAGNETIC BUTTONS =====
@@ -611,11 +628,22 @@ function loadProjects() {
 function initBackToTop() {
   const btn = document.getElementById('back-to-top');
   if (!btn) return;
-  window.addEventListener(
-    'scroll',
-    throttle(() => btn.classList.toggle('visible', window.scrollY > 600), 100)
+  if (!isTouch) {
+    window.addEventListener(
+      'scroll',
+      throttle(() => btn.classList.toggle('visible', window.scrollY > 600), 100),
+      { passive: true }
+    );
+  } else {
+    // Show after idle check — no scroll listener on mobile
+    const reveal = () => {
+      if (window.scrollY > 700) btn.classList.add('visible');
+    };
+    window.addEventListener('scroll', throttle(reveal, 400), { passive: true });
+  }
+  btn.addEventListener('click', () =>
+    window.scrollTo({ top: 0, behavior: isTouch || prefersReducedMotion ? 'auto' : 'smooth' })
   );
-  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
 
 // ===== CONTACT FORM =====
@@ -716,17 +744,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const useAnim = document.documentElement.classList.contains('js-anim') && !prefersReducedMotion;
 
   if (prefersReducedMotion || isTouch) {
-    // Mobile: content already visible — light enhancements only
+    // Mobile: zero continuous motion / observers — native scroll only
     document.querySelectorAll('.reveal, .code-line').forEach((el) => el.classList.add('in-view', 'typed'));
     document.querySelectorAll('[data-count]').forEach((el) => {
       const target = el.getAttribute('data-count');
       const suffix = el.getAttribute('data-suffix') || '';
       if (target) el.textContent = Number(target).toLocaleString() + suffix;
     });
-    initMarquee();
-    initTimeline();
+    const timeline = document.getElementById('experience-timeline');
+    if (timeline) timeline.classList.add('in-view');
     document.body.classList.add('is-ready');
-    initScrollToTop();
     return;
   }
 

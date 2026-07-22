@@ -2627,61 +2627,101 @@ body.is-ready .scroll-cue { opacity: 1; }
 }
 
 /*
-  Touch / narrow — paint fast. Kill GPU-heavy blur, backdrop-filter,
-  animated aurora, and will-change. Keep light CSS motion only.
+  Touch / narrow — buttery native scroll.
+  Kill continuous animations, fixed paint layers, blur, and scroll-fighting chrome.
 */
+html.is-touch {
+  scroll-behavior: auto !important;
+}
+html.is-touch,
+html.is-touch body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overscroll-behavior-y: none;
+}
+html.is-touch body {
+  transition: none !important;
+}
+/* Fixed grid + glow layers are a major iOS scroll stutter source */
+html.is-touch body::before,
 html.is-touch .grain,
 html.is-touch .float-orbs,
 html.is-touch .scroll-progress,
-html.is-touch .snap-rail {
-  display: none !important;
-}
-html.is-touch .navbar {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background: color-mix(in srgb, var(--bg) 94%, transparent);
-}
-/* Static soft glow — no filter:blur (very expensive on mobile GPUs) */
-html.is-touch .aurora {
-  will-change: auto;
-}
-html.is-touch .aurora span {
-  filter: none !important;
-  animation: none !important;
-  will-change: auto !important;
-  opacity: 0.18;
-  background: radial-gradient(circle, var(--accent), transparent 68%) !important;
-}
-html.is-touch .aurora .a2 {
-  background: radial-gradient(circle, #8b5cf6, transparent 68%) !important;
-}
-html.is-touch .aurora .a3 {
-  background: radial-gradient(circle, #06b6d4, transparent 68%) !important;
-  opacity: 0.12;
-}
+html.is-touch .snap-rail,
+html.is-touch .aurora,
+html.is-touch .scroll-cue,
+html.is-touch .fp-wipe,
 html.is-touch .section-alt::before,
 html.is-touch .section-alt::after,
-html.is-touch .hero-visual::before,
-html.is-touch .fp-wipe {
+html.is-touch .hero-visual::before {
   display: none !important;
+  content: none !important;
+  animation: none !important;
 }
+html.is-touch .navbar {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: var(--bg);
+  transition: none !important;
+  box-shadow: none;
+}
+html.is-touch .navbar.scrolled {
+  border-bottom-color: var(--border);
+  box-shadow: none;
+}
+/* Freeze marquees — infinite CSS transforms fight the scroll compositor */
+html.is-touch .marquee-track,
+html.is-touch .marquee-band .marquee-track,
+html.is-touch .status-dot,
+html.is-touch .editor-caret,
+html.is-touch .scroll-cue-line,
 html.is-touch .hero-name {
   animation: none !important;
+}
+html.is-touch .marquee-track {
+  transform: none !important;
+  will-change: auto !important;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 100%;
+  justify-content: center;
+  row-gap: 0.65rem;
+  column-gap: 1.25rem;
+}
+html.is-touch .marquee {
+  -webkit-mask-image: none;
+  mask-image: none;
+  overflow: visible;
+}
+html.is-touch .marquee-band .marquee.reverse {
+  display: none;
 }
 html.is-touch .hero-copy,
 html.is-touch .hero-visual,
 html.is-touch .code-editor,
-html.is-touch [data-parallax] {
+html.is-touch [data-parallax],
+html.is-touch .project-card,
+html.is-touch .highlight {
   transform: none !important;
   will-change: auto !important;
+  transition: none !important;
 }
-html.is-touch .marquee-track {
-  animation-duration: 48s;
+html.is-touch .timeline::before,
+html.is-touch .timeline .entry::before {
+  transition: none !important;
+  transform: none !important;
 }
-/* Instant text — no webfont wait on phones */
-html.is-touch,
-html.is-touch body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+html.is-touch .code-editor {
+  box-shadow: var(--shadow-sm);
+}
+html.is-touch .project-card,
+html.is-touch .highlight,
+html.is-touch .skill-category {
+  box-shadow: none;
+}
+/* Skip offscreen paint work while scrolling */
+html.is-touch .section.snap-panel {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 720px;
 }
 html.is-touch .hero-role,
 html.is-touch .eyebrow,
@@ -2693,31 +2733,39 @@ html.is-touch .project-index {
 }
 
 @media (max-width: 1024px), (hover: none) {
+  body::before,
   .grain,
   .float-orbs,
-  .scroll-progress {
-    display: none !important;
-  }
-  .navbar {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    background: color-mix(in srgb, var(--bg) 94%, transparent);
-  }
-  .aurora span {
-    filter: none !important;
-    animation: none !important;
-  }
+  .scroll-progress,
+  .aurora,
+  .scroll-cue,
   .section-alt::before,
   .section-alt::after,
   .hero-visual::before {
     display: none !important;
   }
+  .navbar {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--bg);
+    transition: none !important;
+  }
+  .marquee-track,
+  .status-dot,
   .hero-name {
     animation: none !important;
   }
+  .marquee-track {
+    transform: none !important;
+  }
   .code-editor,
-  [data-parallax] {
+  [data-parallax],
+  .project-card {
     transform: none !important;
     will-change: auto !important;
+  }
+  .section.snap-panel {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 720px;
   }
 }
