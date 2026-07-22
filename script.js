@@ -1,6 +1,10 @@
 // ===== HELPERS =====
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+const isLite =
+  document.documentElement.classList.contains('is-lite') ||
+  window.matchMedia('(hover: none), (pointer: coarse), (max-width: 1024px)').matches;
+if (isLite) document.documentElement.classList.add('is-lite');
 
 function throttle(fn, limit) {
   let waiting = false;
@@ -13,26 +17,6 @@ function throttle(fn, limit) {
   };
 }
 
-// ===== THEME TOGGLE =====
-function initTheme() {
-  const toggle = document.getElementById('theme-toggle');
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (!toggle) return;
-
-  const apply = (theme) => {
-    document.documentElement.setAttribute('data-theme', theme);
-    if (meta) meta.setAttribute('content', theme === 'dark' ? '#0b0f18' : '#ffffff');
-  };
-
-  toggle.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-    const next = current === 'dark' ? 'light' : 'dark';
-    apply(next);
-    try {
-      localStorage.setItem('theme', next);
-    } catch (e) {}
-  });
-}
 
 // ===== NAVIGATION =====
 function initNavigation() {
@@ -389,50 +373,33 @@ function initHighlightSpotlight() {
   });
 }
 
-// ===== SECTION SNAP (CSS-only scroll — JS only for rail + click nav) =====
-function initSnapScroll() {
+// ===== SECTION RAIL + IN-PAGE NAV (no scroll snap) =====
+function initSectionNav() {
   const panels = Array.from(document.querySelectorAll('.snap-panel'));
   const railItems = Array.from(document.querySelectorAll('.snap-rail-item'));
   if (!panels.length) return;
-
-  let scrolling = false;
-
-  const setActiveById = (id) => {
-    railItems.forEach((item) => {
-      item.classList.toggle('is-active', item.getAttribute('data-snap') === id);
-    });
-    panels.forEach((p) => p.classList.toggle('is-active-panel', p.id === id));
-  };
 
   const headerOffset = () => {
     const nav = document.querySelector('.navbar');
     return (nav ? nav.offsetHeight : 68) + 8;
   };
 
-  const scrollToPanel = (panel) => {
-    if (!panel || scrolling) return;
-    scrolling = true;
-    // Temporarily kill snap so smooth scroll doesn't fight it
-    document.documentElement.classList.add('is-scrolling');
+  const setActiveById = (id) => {
+    railItems.forEach((item) => {
+      item.classList.toggle('is-active', item.getAttribute('data-snap') === id);
+    });
+  };
 
+  const scrollToPanel = (panel) => {
+    if (!panel) return;
     const top = panel.getBoundingClientRect().top + window.scrollY - headerOffset();
     window.scrollTo({
       top: Math.max(0, top),
       behavior: prefersReducedMotion ? 'auto' : 'smooth',
     });
-
     setActiveById(panel.id);
-
-    window.setTimeout(() => {
-      document.documentElement.classList.remove('is-scrolling');
-      // Land exactly on the snap point
-      const settled = panel.getBoundingClientRect().top + window.scrollY - headerOffset();
-      window.scrollTo({ top: Math.max(0, settled), behavior: 'auto' });
-      scrolling = false;
-    }, prefersReducedMotion ? 50 : 700);
   };
 
-  // Rail + in-page links — no wheel hijacking (that was the glitch)
   const onNavClick = (e) => {
     const link = e.currentTarget;
     const id = link.getAttribute('data-snap') || link.getAttribute('href')?.slice(1);
@@ -451,9 +418,7 @@ function initSnapScroll() {
     }
   });
 
-  // Lightweight scroll-spy for the rail (read-only — never calls scrollTo)
   const syncRail = throttle(() => {
-    if (scrolling) return;
     let bestId = panels[0]?.id;
     let bestDist = Infinity;
     panels.forEach((p) => {
@@ -464,22 +429,26 @@ function initSnapScroll() {
       }
     });
     if (bestId) setActiveById(bestId);
-  }, 100);
+  }, 120);
 
   window.addEventListener('scroll', syncRail, { passive: true });
-  document.body.classList.add('has-snap');
   setActiveById(panels[0]?.id);
 }
 
-// ===== FORCE TOP ON LOAD / REFRESH =====
+// ===== FORCE TOP ON LOAD / REFRESH (all devices) =====
 function initScrollToTop() {
   try {
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   } catch (e) {}
-  window.scrollTo(0, 0);
-  // Catch late browser restoration / hash jumps
-  requestAnimationFrame(() => window.scrollTo(0, 0));
-  window.addEventListener('load', () => window.scrollTo(0, 0), { once: true });
+  try {
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  } catch (e) {}
+  const toTop = () => window.scrollTo(0, 0);
+  toTop();
+  requestAnimationFrame(toTop);
+  window.addEventListener('load', toTop, { once: true });
+  // iOS Safari often restores scroll after paint
+  [0, 50, 150, 400].forEach((ms) => setTimeout(toTop, ms));
 }
 
 // ===== MAGNETIC BUTTONS =====
@@ -553,12 +522,13 @@ async function loadProjects() {
   const grid = document.getElementById('projects-grid');
   if (!grid) return;
   try {
-    const response = await fetch(`projects.json?v=${Date.now()}`, { cache: 'no-store' });
+    // Cacheable fetch — avoid Date.now()/no-store which forces a network hit every visit
+    const response = await fetch('projects.json?v=4.9.0');
     const projects = await response.json();
     grid.innerHTML = projects
       .map(
         (project, idx) => `
-      <article class="project-card reveal">
+      <article class="project-card reveal${isLite ? ' in-view' : ''}">
         <div class="project-card-main">
           <div class="project-index">0${idx + 1} / 0${projects.length}</div>
           <h3 class="project-title">${project.title}</h3>
@@ -592,13 +562,14 @@ async function loadProjects() {
       )
       .join('');
 
-    grid.querySelectorAll('.project-card').forEach((card, i) => {
-      card.style.setProperty('--i', i);
-    });
-
-    initStaggerIndices();
-    initReveal();
-    bindCardSpotlight(grid);
+    if (!isLite) {
+      grid.querySelectorAll('.project-card').forEach((card, i) => {
+        card.style.setProperty('--i', i);
+      });
+      initStaggerIndices();
+      initReveal();
+      if (isFinePointer) bindCardSpotlight(grid);
+    }
   } catch (error) {
     console.error('Error loading projects:', error);
     grid.innerHTML =
@@ -682,32 +653,50 @@ function cleanupServiceWorker() {
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   initScrollToTop();
-  initTheme();
   initNavigation();
-  initMarquee();
-  initScrollProgress();
-  initSplitTitles();
-  initScramble();
-  initCodeReveal();
-  initDirectionalReveals();
-  initStaggerIndices();
   loadProjects();
   initBackToTop();
   initContactForm();
-  initMagnetic();
-  initCursor();
-  initParallax();
-  initHeroScroll();
-  initHeroMouse();
-  initTimeline();
-  initHighlightSpotlight();
-  initSnapScroll();
-  initReveal();
+  initSectionNav();
   updateYear();
   cleanupServiceWorker();
-  // Soft boot: drop preload, then kick hero entrance a beat later
+
+  if (isLite || prefersReducedMotion) {
+    // Mobile / lite: show everything immediately — no reveal delays or typing
+    document.querySelectorAll('.reveal, .code-line').forEach((el) => el.classList.add('in-view', 'typed'));
+    document.querySelectorAll('[data-count]').forEach((el) => {
+      const target = el.getAttribute('data-count');
+      const suffix = el.getAttribute('data-suffix') || '';
+      if (target) el.textContent = Number(target).toLocaleString() + suffix;
+    });
+    document.body.classList.add('is-ready');
+    document.body.classList.remove('preload');
+    initScrollToTop();
+    return;
+  }
+
+  // Desktop polish path
+  initMarquee();
+  initScrollProgress();
+  initSplitTitles();
+  initCodeReveal();
+  initDirectionalReveals();
+  initStaggerIndices();
+  initReveal();
+  if (isFinePointer && !prefersReducedMotion) {
+    initScramble();
+    initMagnetic();
+    initCursor();
+    initParallax();
+    initHeroScroll();
+    initHeroMouse();
+    initTimeline();
+    initHighlightSpotlight();
+  }
+
   requestAnimationFrame(() => {
     document.body.classList.remove('preload');
-    setTimeout(() => document.body.classList.add('is-ready'), prefersReducedMotion ? 0 : 80);
+    setTimeout(() => document.body.classList.add('is-ready'), 60);
+    initScrollToTop();
   });
 });

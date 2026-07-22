@@ -118,7 +118,6 @@
 }
 
 html {
-  /* auto — smooth on <html> fights scroll-snap and causes the glitchy feel */
   scroll-behavior: auto;
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
@@ -126,7 +125,6 @@ html {
   scroll-padding-top: calc(var(--header-height) + 12px + env(safe-area-inset-top, 0px));
   overflow-x: clip;
   max-width: 100%;
-  scroll-snap-type: y mandatory;
 }
 
 body {
@@ -442,31 +440,8 @@ a:hover {
 }
 
 .theme-toggle {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--ink-700);
-  cursor: pointer;
-  transition: all var(--transition);
+  display: none !important;
 }
-
-.theme-toggle:hover {
-  color: var(--accent);
-  border-color: var(--accent-border);
-}
-
-.theme-toggle svg {
-  width: 18px;
-  height: 18px;
-}
-
-.theme-toggle .icon-moon { display: none; }
-[data-theme='dark'] .theme-toggle .icon-sun { display: none; }
-[data-theme='dark'] .theme-toggle .icon-moon { display: block; }
 
 .nav-toggle {
   display: none;
@@ -2475,7 +2450,7 @@ body.is-ready .scroll-cue { opacity: 1; }
 }
 
 /* ===================================================================
-   SECTION SNAP — all viewports; grow with content (no max-height clip)
+   SECTION LAYOUT — natural scroll (snap removed for smoother mobile)
    =================================================================== */
 
 #fp-root {
@@ -2488,19 +2463,10 @@ body.is-ready .scroll-cue { opacity: 1; }
 .snap-panel {
   position: relative;
   height: auto;
+  min-height: 0;
   max-height: none;
   overflow: visible;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  /* Short sections fill the screen; taller ones (projects) scroll inside, then snap to next */
-  min-height: 100svh;
-  min-height: 100dvh;
   box-sizing: border-box;
-}
-
-/* While JS is animating a nav click, disable snap so it doesn't stutter */
-html.is-scrolling {
-  scroll-snap-type: none;
 }
 
 .hero.snap-panel {
@@ -2631,23 +2597,96 @@ html.is-scrolling {
   }
 }
 
-/* Short landscape: don't force full-viewport section height */
-@media (max-height: 500px) and (orientation: landscape) {
-  .snap-panel {
-    min-height: 0;
-    scroll-snap-stop: normal;
+@media (prefers-reduced-motion: reduce) {
+  .snap-rail {
+    display: none !important;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-snap-type: none !important;
-  }
-  .snap-panel {
-    min-height: 0 !important;
-    scroll-snap-align: none !important;
-  }
-  .snap-rail {
+/* Lite mode (set in <head>) + touch/narrow: instant content, minimal GPU cost */
+html.is-lite .grain,
+html.is-lite .float-orbs,
+html.is-lite .scroll-progress,
+html.is-lite .aurora,
+html.is-lite .snap-rail {
+  display: none !important;
+}
+html.is-lite .reveal,
+html.is-lite .split-word,
+html.is-lite .code-line,
+html.is-lite .reveal .skill-list span,
+html.is-lite .reveal .tag,
+html.is-lite .hero-status,
+html.is-lite .hero-title,
+html.is-lite .hero-description,
+html.is-lite .hero-meta,
+html.is-lite .hero-actions,
+html.is-lite .hero-visual,
+html.is-lite .scroll-cue {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+html.is-lite .marquee-track {
+  animation: none !important;
+  transform: none !important;
+}
+html.is-lite .marquee,
+html.is-lite .marquee-band {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+html.is-lite .code-editor,
+html.is-lite [data-parallax],
+html.is-lite .hero-copy,
+html.is-lite .hero-visual {
+  transform: none !important;
+  will-change: auto !important;
+}
+html.is-lite .navbar {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--bg);
+}
+html.is-lite body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
+@media (max-width: 1024px), (hover: none) {
+  .grain,
+  .float-orbs,
+  .scroll-progress,
+  .aurora {
     display: none !important;
+  }
+  .reveal,
+  .split-word,
+  .code-line,
+  .reveal .skill-list span,
+  .reveal .tag,
+  .hero-status,
+  .hero-title,
+  .hero-description,
+  .hero-meta,
+  .hero-actions,
+  .hero-visual,
+  .scroll-cue {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+  .marquee-track {
+    animation: none !important;
+  }
+  .navbar {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--bg);
+  }
+  .code-editor {
+    transform: none !important;
+    will-change: auto !important;
   }
 }
