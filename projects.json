@@ -1,8 +1,11 @@
 [
   {
+    "kicker": "Document intelligence · Government",
     "title": "BC Environment NLP Pipeline",
     "desc": "NLP pipeline for the Government of BC that classifies scanned environmental PDFs (regex + BERT), detects duplicates (ROUGE + RapidFuzz), and falls back to local LLMs via Ollama.",
-    "impact": "Reliable metadata extraction and cautious, accurate releasability predictions.",
+    "impact": "Cut document review from hours to minutes while keeping releasability decisions cautious and auditable.",
+    "metric": "2,000+ scanned PDFs",
+    "flow": ["Extract", "Classify", "Validate"],
     "tech": ["Python", "BERT", "Ollama", "ROUGE", "RapidFuzz"],
     "links": [
       { "label": "Repository", "href": "https://github.com/bcgov/nr-site-tagging-pilot" },
@@ -10,18 +13,24 @@
     ]
   },
   {
+    "kicker": "LLM evaluation · Biomedical NLP",
     "title": "Lay Summarization Pipeline",
     "desc": "Biomedical lay-summarization system comparing zero-shot, few-shot, fine-tuned, and RAG approaches, with a full evaluation harness (ROUGE, BERTScore, SummaC, and more).",
     "impact": "Abstract-only LLaMA2 beat fine-tuned variants on limited hardware; RAG gave the best factuality.",
+    "metric": "4 modeling strategies compared",
+    "flow": ["Benchmark", "Evaluate", "Compare"],
     "tech": ["Python", "LLaMA2", "RAG", "Transformers"],
     "links": [
       { "label": "Repository", "href": "https://github.com/jnadal14/Lay_Summarization_LLM_Pipeline" }
     ]
   },
   {
+    "kicker": "Agentic NLP · Safety",
     "title": "Agentic Moderation & Detoxification Pipeline",
     "desc": "An agentic pipeline that detects language, translates, classifies sentiment and toxicity, and conditionally detoxifies text — using LangDetect, UBC NLP Toucan, and IBM Granite.",
-    "impact": "Multilingual moderation agent — 0.65 sentiment accuracy, 7.7 / 10 detox quality.",
+    "impact": "Built multilingual routing that only invokes detoxification when the earlier classifiers show it is needed.",
+    "metric": "0.65 sentiment accuracy · 7.7 / 10 detox quality",
+    "flow": ["Detect", "Route", "Detoxify"],
     "tech": ["Python", "LangChain", "IBM Granite", "Agents"],
     "links": [
       { "label": "Repository", "href": "https://github.com/jnadal14/Detoxification_LLM_Dataflow" },
@@ -29,9 +38,12 @@
     ]
   },
   {
+    "kicker": "Human-in-the-loop NLP · Research tooling",
     "title": "Movie Review Corpus & UI",
     "desc": "A movie-review corpus with a custom annotation schema and UI, plus a framework comparing GPT vs human labels for sentiment analysis.",
-    "impact": "Prototyped a sentiment-analysis research tool.",
+    "impact": "Turned corpus creation into a repeatable workflow where human and GPT labels can be compared and audited.",
+    "metric": "Corpus + custom annotation UI",
+    "flow": ["Annotate", "Compare", "Audit"],
     "tech": ["Python", "Corpus", "Annotation", "GPT"],
     "links": [
       { "label": "Repository", "href": "https://github.com/jnadal14/Movie_Review_Corpus_Annotation" }

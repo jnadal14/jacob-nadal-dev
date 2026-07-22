@@ -3,20 +3,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Jacob Nadal — Data Scientist & NLP Engineer</title>
+  <title>Jacob Nadal — Data Scientist &amp; NLP Engineer</title>
   <meta name="description" content="Jacob Nadal is a Vancouver-based data scientist and NLP engineer building machine learning pipelines, analytics dashboards, and LLM applications that turn real-world data into decisions.">
   <meta name="theme-color" content="#ffffff">
   <link rel="canonical" href="https://jacobnadal.dev/">
-  <meta property="og:title" content="Jacob Nadal — Data Scientist & NLP Engineer">
+  <meta property="og:title" content="Jacob Nadal — Data Scientist &amp; NLP Engineer">
   <meta property="og:description" content="Vancouver-based data scientist and NLP engineer building ML pipelines, dashboards, and LLM applications.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://jacobnadal.dev/">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:site_name" content="Jacob Nadal">
+  <meta property="og:locale" content="en_CA">
+  <meta property="og:image" content="https://jacobnadal.dev/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Jacob Nadal — Data Scientist and NLP Engineer. 2,000+ documents automated across NLP, LLM, and analytics work.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Jacob Nadal — Data Scientist &amp; NLP Engineer">
+  <meta name="twitter:description" content="Production-minded NLP, LLM, and analytics work—from 2,000+ automated documents to evaluated language systems.">
+  <meta name="twitter:image" content="https://jacobnadal.dev/og.png">
+  <meta name="twitter:image:alt" content="Jacob Nadal data science portfolio preview">
   <script>
     (function () {
       try {
-        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-        if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+        if ('scrollRestoration' in history) history.scrollRestoration = location.hash ? 'auto' : 'manual';
         document.documentElement.removeAttribute('data-theme');
         localStorage.removeItem('theme');
         var touch = window.matchMedia('(hover: none), (pointer: coarse), (max-width: 1024px)').matches;
@@ -57,7 +66,7 @@
     </style>
   </noscript>
   <!-- CSS first for fastest paint -->
-  <link rel="stylesheet" href="styles.min.css?v=5.6.0">
+  <link rel="stylesheet" href="styles.min.css?v=5.7.0">
   <!-- Fonts: desktop only, non-blocking. Mobile uses system fonts (instant). -->
   <script>
     (function () {
@@ -91,6 +100,7 @@
   </script>
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
   <div class="grain" aria-hidden="true"></div>
   <div class="float-orbs" aria-hidden="true">
     <span class="o1"></span>
@@ -113,10 +123,10 @@
         <a href="#skills" class="nav-link">Skills</a>
         <a href="#education" class="nav-link">Education</a>
         <a href="#contact" class="nav-link">Contact</a>
-        <a href="/JACOB_NADAL_RESUME_2025.pdf" target="_blank" rel="noopener" class="nav-link resume-link" download>Resume</a>
+        <a href="/JACOB_NADAL_RESUME_2025.pdf" target="_blank" rel="noopener" class="nav-link resume-link">Resume</a>
       </div>
       <div class="nav-actions">
-        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-controls="nav-links" aria-expanded="false">
           <span></span>
           <span></span>
           <span></span>
@@ -138,7 +148,7 @@
 
   <div class="fp-wipe" id="fp-wipe" aria-hidden="true"></div>
 
-  <div id="fp-root">
+  <main id="main-content">
   <!-- Hero -->
   <header id="home" class="hero snap-panel fp-panel is-active">
     <div class="aurora" aria-hidden="true">
@@ -151,7 +161,7 @@
         <div class="hero-copy">
           <span class="hero-status">
             <span class="status-dot" aria-hidden="true"></span>
-            open_to_work = True
+            available_for = "Data Science · ML"
           </span>
           <h1 class="hero-title">
             <span class="hero-name">Jacob Nadal</span><br>
@@ -176,7 +186,7 @@
               View my work
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </a>
-            <a href="#contact" class="btn btn-outline magnetic">Get in touch</a>
+            <a href="/JACOB_NADAL_RESUME_2025.pdf" target="_blank" rel="noopener" class="btn btn-outline magnetic">View Resume</a>
           </div>
         </div>
 
@@ -212,8 +222,8 @@
           <div class="highlight-label">Government PDFs automated with an NLP pipeline</div>
         </div>
         <div class="highlight reveal">
-          <div class="highlight-value">End-to-end</div>
-          <div class="highlight-label">From data cleaning to deployed models &amp; dashboards</div>
+          <div class="highlight-value">4 case studies</div>
+          <div class="highlight-label">Production NLP, LLM evaluation, agents &amp; analytics</div>
         </div>
         <div class="highlight reveal">
           <div class="highlight-value">MDS + BASc</div>
@@ -607,12 +617,12 @@
       </footer>
     </div>
   </section>
-  </div><!-- /#fp-root -->
+  </main><!-- /#main-content -->
 
   <button id="back-to-top" class="back-to-top" aria-label="Back to top">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
   </button>
 
-  <script src="script.min.js?v=5.6.0" defer></script>
+  <script src="script.min.js?v=5.7.0" defer></script>
 </body>
 </html>

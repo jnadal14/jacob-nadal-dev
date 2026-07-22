@@ -35,18 +35,22 @@ function initNavigation() {
   }
 
   if (navToggle && navLinks) {
+    const closeMenu = () => {
+      navLinks.classList.remove('active');
+      navToggle.classList.remove('active');
+      navToggle.setAttribute('aria-expanded', 'false');
+    };
     navToggle.addEventListener('click', () => {
       const open = navLinks.classList.toggle('active');
       navToggle.classList.toggle('active', open);
       navToggle.setAttribute('aria-expanded', String(open));
     });
-    links.forEach((link) =>
-      link.addEventListener('click', () => {
-        navLinks.classList.remove('active');
-        navToggle.classList.remove('active');
-        navToggle.setAttribute('aria-expanded', 'false');
-      })
-    );
+    links.forEach((link) => link.addEventListener('click', closeMenu));
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || !navLinks.classList.contains('active')) return;
+      closeMenu();
+      navToggle.focus();
+    });
   }
 
   if (isTouch) return;
@@ -62,8 +66,12 @@ function initNavigation() {
         const item = document.querySelector(`.nav-link[href="#${id}"]`);
         if (!item) return;
         if (scrollPos >= section.offsetTop && scrollPos < section.offsetTop + section.offsetHeight) {
-          navItems.forEach((n) => n.classList.remove('active'));
+          navItems.forEach((n) => {
+            n.classList.remove('active');
+            n.removeAttribute('aria-current');
+          });
           item.classList.add('active');
+          item.setAttribute('aria-current', 'location');
         }
       });
     }, 120),
@@ -384,7 +392,10 @@ function initSectionNav() {
 
   const setActiveById = (id) => {
     railItems.forEach((item) => {
-      item.classList.toggle('is-active', item.getAttribute('data-snap') === id);
+      const isActive = item.getAttribute('data-snap') === id;
+      item.classList.toggle('is-active', isActive);
+      if (isActive) item.setAttribute('aria-current', 'location');
+      else item.removeAttribute('aria-current');
     });
   };
 
@@ -395,6 +406,7 @@ function initSectionNav() {
       top: Math.max(0, top),
       behavior: prefersReducedMotion ? 'auto' : 'smooth',
     });
+    if (location.hash !== `#${panel.id}`) history.replaceState(null, '', `#${panel.id}`);
     setActiveById(panel.id);
   };
 
@@ -436,16 +448,18 @@ function initSectionNav() {
 // ===== FORCE TOP ON LOAD / REFRESH =====
 function initScrollToTop() {
   try {
-    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    if ('scrollRestoration' in history) history.scrollRestoration = location.hash ? 'auto' : 'manual';
   } catch (e) {}
-  // On touch: one quiet reset only — never fight the user mid-scroll
-  if (isTouch) {
-    if (!location.hash) window.scrollTo(0, 0);
+  const hashTarget = location.hash ? document.getElementById(location.hash.slice(1)) : null;
+  if (hashTarget) {
+    requestAnimationFrame(() => hashTarget.scrollIntoView({ block: 'start' }));
     return;
   }
-  try {
-    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-  } catch (e) {}
+  // On touch: one quiet reset only — never fight the user mid-scroll
+  if (isTouch) {
+    window.scrollTo(0, 0);
+    return;
+  }
   const toTop = () => window.scrollTo(0, 0);
   toTop();
   requestAnimationFrame(toTop);
@@ -522,9 +536,12 @@ function bindCardSpotlight(scope) {
 // ===== PROJECTS (inlined — no extra network round-trip on mobile) =====
 const PROJECTS = [
   {
+    kicker: 'Document intelligence · Government',
     title: 'BC Environment NLP Pipeline',
     desc: 'NLP pipeline for the Government of BC that classifies scanned environmental PDFs (regex + BERT), detects duplicates (ROUGE + RapidFuzz), and falls back to local LLMs via Ollama.',
-    impact: 'Reliable metadata extraction and cautious, accurate releasability predictions.',
+    impact: 'Cut document review from hours to minutes while keeping releasability decisions cautious and auditable.',
+    metric: '2,000+ scanned PDFs',
+    flow: ['Extract', 'Classify', 'Validate'],
     tech: ['Python', 'BERT', 'Ollama', 'ROUGE', 'RapidFuzz'],
     links: [
       { label: 'Repository', href: 'https://github.com/bcgov/nr-site-tagging-pilot' },
@@ -532,16 +549,22 @@ const PROJECTS = [
     ],
   },
   {
+    kicker: 'LLM evaluation · Biomedical NLP',
     title: 'Lay Summarization Pipeline',
     desc: 'Biomedical lay-summarization system comparing zero-shot, few-shot, fine-tuned, and RAG approaches, with a full evaluation harness (ROUGE, BERTScore, SummaC, and more).',
     impact: 'Abstract-only LLaMA2 beat fine-tuned variants on limited hardware; RAG gave the best factuality.',
+    metric: '4 modeling strategies compared',
+    flow: ['Benchmark', 'Evaluate', 'Compare'],
     tech: ['Python', 'LLaMA2', 'RAG', 'Transformers'],
     links: [{ label: 'Repository', href: 'https://github.com/jnadal14/Lay_Summarization_LLM_Pipeline' }],
   },
   {
+    kicker: 'Agentic NLP · Safety',
     title: 'Agentic Moderation & Detoxification Pipeline',
     desc: 'An agentic pipeline that detects language, translates, classifies sentiment and toxicity, and conditionally detoxifies text — using LangDetect, UBC NLP Toucan, and IBM Granite.',
-    impact: 'Multilingual moderation agent — 0.65 sentiment accuracy, 7.7 / 10 detox quality.',
+    impact: 'Built multilingual routing that only invokes detoxification when the earlier classifiers show it is needed.',
+    metric: '0.65 sentiment accuracy · 7.7 / 10 detox quality',
+    flow: ['Detect', 'Route', 'Detoxify'],
     tech: ['Python', 'LangChain', 'IBM Granite', 'Agents'],
     links: [
       { label: 'Repository', href: 'https://github.com/jnadal14/Detoxification_LLM_Dataflow' },
@@ -549,9 +572,12 @@ const PROJECTS = [
     ],
   },
   {
+    kicker: 'Human-in-the-loop NLP · Research tooling',
     title: 'Movie Review Corpus & UI',
     desc: 'A movie-review corpus with a custom annotation schema and UI, plus a framework comparing GPT vs human labels for sentiment analysis.',
-    impact: 'Prototyped a sentiment-analysis research tool.',
+    impact: 'Turned corpus creation into a repeatable workflow where human and GPT labels can be compared and audited.',
+    metric: 'Corpus + custom annotation UI',
+    flow: ['Annotate', 'Compare', 'Audit'],
     tech: ['Python', 'Corpus', 'Annotation', 'GPT'],
     links: [{ label: 'Repository', href: 'https://github.com/jnadal14/Movie_Review_Corpus_Annotation' }],
   },
@@ -564,19 +590,34 @@ function loadProjects() {
     (project, idx) => `
       <article class="project-card reveal">
         <div class="project-card-main">
-          <div class="project-index">0${idx + 1} / 0${PROJECTS.length}</div>
+          <div class="project-card-topline">
+            <div class="project-index">0${idx + 1} / 0${PROJECTS.length}</div>
+            <div class="project-kicker">${project.kicker}</div>
+          </div>
           <h3 class="project-title">${project.title}</h3>
           <p class="project-description">${project.desc}</p>
         </div>
         <div class="project-card-side">
           ${
             project.impact
-              ? `<div class="project-impact">
-                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                   <span>${project.impact}</span>
+              ? `<div class="project-proof">
+                   <span class="project-proof-label">Outcome</span>
+                   <strong>${project.impact}</strong>
+                   <span class="project-metric">${project.metric}</span>
                  </div>`
               : ''
           }
+          <ol class="project-flow" aria-label="Project workflow">
+            ${(project.flow || [])
+              .map(
+                (step, stepIndex) => `
+                  <li>
+                    <span>${String(stepIndex + 1).padStart(2, '0')}</span>
+                    ${step}
+                  </li>`
+              )
+              .join('')}
+          </ol>
           <div class="project-tech">
             ${(project.tech || []).map((t) => `<span class="tag">${t}</span>`).join('')}
           </div>
@@ -617,9 +658,10 @@ function initBackToTop() {
     throttle(() => btn.classList.toggle('visible', window.scrollY > 600), 100),
     { passive: true }
   );
-  btn.addEventListener('click', () =>
-    window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' })
-  );
+  btn.addEventListener('click', () => {
+    history.replaceState(null, '', location.pathname + location.search);
+    window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+  });
 }
 
 // ===== CONTACT FORM =====
@@ -653,6 +695,8 @@ function initContactForm() {
 function showNotification(message, type = 'info') {
   const el = document.createElement('div');
   el.textContent = message;
+  el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+  el.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
   el.style.cssText = `
     position: fixed; top: 20px; right: 20px; z-index: 10000;
     padding: 0.85rem 1.25rem; border-radius: 0.625rem; color: #fff;
