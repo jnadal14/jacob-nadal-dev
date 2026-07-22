@@ -1343,7 +1343,7 @@ iframe {
 }
 
 /* ===== SCROLL REVEAL ===== */
-/* Default: visible (mobile paints instantly). .js-anim hides then reveals on desktop. */
+/* Default: visible without JS. .js-anim hides then reveals on every device. */
 .reveal {
   opacity: 1;
   transform: none;
@@ -1400,7 +1400,7 @@ iframe {
 .reveal.in-view .skill-list span:nth-child(n + 9), .reveal.in-view .tag:nth-child(n + 9) { transition-delay: 0.4s; }
 
 /* ===== HERO ENTRANCE ===== */
-/* Visible by default; desktop js-anim can stage the entrance */
+/* Visible by default; .js-anim stages the entrance on every device */
 .hero-status,
 .hero-title,
 .hero-description,
@@ -1731,14 +1731,14 @@ iframe {
   top: auto !important;
   padding: var(--space-2xl);
   box-shadow: var(--shadow-md);
-  transform: none;
-  opacity: 1;
   transition:
+    opacity 0.65s var(--ease-out),
+    transform 0.65s var(--ease-out),
     box-shadow 0.3s var(--ease-soft),
     border-color 0.3s ease;
 }
 
-.projects-stack .project-card:hover {
+.projects-stack .project-card.in-view:hover {
   transform: translateY(-3px);
 }
 
@@ -1758,16 +1758,21 @@ iframe {
 
 .projects-stack .project-description { font-size: 0.98rem; }
 
-/* Directional reveals — vertical only on narrow screens so overflow-x doesn't clip text */
-.reveal[data-dir='left'] { transform: translateX(-28px); }
-.reveal[data-dir='right'] { transform: translateX(28px); }
-.reveal[data-dir='left'].in-view,
-.reveal[data-dir='right'].in-view { transform: none; }
+/* Directional reveals — scoped under .js-anim so no-JS content stays visible */
+.js-anim .reveal[data-dir='left'] {
+  transform: translateX(-28px);
+}
+.js-anim .reveal[data-dir='right'] {
+  transform: translateX(28px);
+}
+.js-anim .reveal[data-dir='left'].in-view,
+.js-anim .reveal[data-dir='right'].in-view {
+  transform: none;
+}
 
-@media (max-width: 1024px) {
-  .reveal[data-dir='left'],
-  .reveal[data-dir='right'] {
-    transform: translateY(20px);
+@media (hover: hover) and (pointer: fine) {
+  .js-anim .projects-stack .project-card.reveal.in-view:hover {
+    transform: translateY(-3px);
   }
 }
 
@@ -2141,10 +2146,15 @@ body::before {
 
 /* About aside list cascade */
 .about-aside li {
+  opacity: 1;
+  transform: none;
+}
+.js-anim .about-aside.reveal li {
   opacity: 0;
   transform: translateX(10px);
   transition: opacity 0.4s var(--ease-out), transform 0.4s var(--ease-out);
 }
+.js-anim .about-aside.reveal.in-view li,
 .about-aside.reveal.in-view li {
   opacity: 1;
   transform: none;
@@ -2625,62 +2635,19 @@ body.is-ready .scroll-cue { opacity: 1; }
 }
 
 /*
-  Touch / narrow — native scroll only.
-  Sticky nav (in flow) so it never covers the hero. No fixed paint layers,
-  continuous animations, gradient-clip text, or content-visibility jumps.
+  Touch / narrow viewport — lighter motion path.
+  Keep the desktop animation identity; drop expensive paint layers.
 */
 html.is-touch {
-  scroll-behavior: auto !important;
+  scroll-behavior: auto;
   scroll-padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px) + 8px);
 }
+
 html.is-touch,
 html.is-touch body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
-html.is-touch body {
-  transition: none !important;
-}
-html.is-touch *,
-html.is-touch *::before,
-html.is-touch *::after {
-  animation: none !important;
-  transition: none !important;
-  scroll-behavior: auto !important;
-}
-html.is-touch body::before,
-html.is-touch .grain,
-html.is-touch .float-orbs,
-html.is-touch .scroll-progress,
-html.is-touch .snap-rail,
-html.is-touch .aurora,
-html.is-touch .scroll-cue,
-html.is-touch .fp-wipe,
-html.is-touch .back-to-top,
-html.is-touch .section-alt::before,
-html.is-touch .section-alt::after,
-html.is-touch .hero-visual::before,
-html.is-touch .hero::before {
-  display: none !important;
-}
-/* In-flow sticky nav — no overlap with landing content */
-html.is-touch .navbar {
-  position: sticky;
-  top: 0;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  box-shadow: none;
-}
-html.is-touch .hero,
-html.is-touch .hero.snap-panel {
-  display: block !important;
-  justify-content: flex-start !important;
-  /* Nav is in document flow now — only need normal section padding */
-  padding-top: var(--space-xl) !important;
-  min-height: 0 !important;
-}
-/* Solid text — background-clip gradients are expensive while scrolling */
+
 html.is-touch .hero-name,
 html.is-touch .eyebrow {
   background: none !important;
@@ -2689,51 +2656,17 @@ html.is-touch .eyebrow {
   -webkit-text-fill-color: var(--ink-900) !important;
   color: var(--ink-900) !important;
 }
+
 html.is-touch .logo-mark {
   background: var(--ink-900) !important;
   color: #fff !important;
   -webkit-text-fill-color: #fff !important;
 }
+
 html.is-touch .btn-primary {
   background: var(--accent) !important;
 }
-html.is-touch .marquee-track {
-  transform: none !important;
-  will-change: auto !important;
-  flex-wrap: wrap;
-  width: 100%;
-  max-width: 100%;
-  justify-content: center;
-  row-gap: 0.65rem;
-  column-gap: 1.25rem;
-}
-html.is-touch .marquee {
-  -webkit-mask-image: none;
-  mask-image: none;
-  overflow: visible;
-}
-html.is-touch .marquee-band .marquee.reverse {
-  display: none;
-}
-html.is-touch .hero-copy,
-html.is-touch .hero-visual,
-html.is-touch .code-editor,
-html.is-touch [data-parallax],
-html.is-touch .project-card,
-html.is-touch .highlight,
-html.is-touch .timeline::before,
-html.is-touch .timeline .entry::before {
-  transform: none !important;
-  will-change: auto !important;
-  filter: none !important;
-}
-html.is-touch .code-editor,
-html.is-touch .project-card,
-html.is-touch .highlight,
-html.is-touch .skill-category,
-html.is-touch .btn {
-  box-shadow: none !important;
-}
+
 html.is-touch .hero-role,
 html.is-touch .eyebrow,
 html.is-touch .code-editor,
@@ -2744,57 +2677,177 @@ html.is-touch .project-index {
 }
 
 @media (max-width: 1024px), (hover: none) {
+  /* Expensive layers off */
   body::before,
   .grain,
   .float-orbs,
-  .scroll-progress,
-  .aurora,
-  .scroll-cue,
+  .snap-rail,
+  .fp-wipe,
   .back-to-top,
   .section-alt::before,
   .section-alt::after,
-  .hero-visual::before,
-  .hero::before {
+  .hero-visual::before {
     display: none !important;
   }
+
   .navbar {
-    position: sticky;
-    top: 0;
+    position: relative;
+    top: auto;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     background: var(--bg);
     border-bottom: 1px solid var(--border);
     box-shadow: none;
-    transition: none !important;
   }
+
   .hero,
   .hero.snap-panel {
     display: block !important;
+    justify-content: flex-start !important;
     padding-top: var(--space-xl) !important;
     min-height: 0 !important;
   }
+
   .hero-name,
   .eyebrow {
     background: none !important;
     -webkit-text-fill-color: var(--ink-900) !important;
     color: var(--ink-900) !important;
   }
-  .marquee-track,
-  .status-dot,
-  .hero-name {
-    animation: none !important;
+
+  /* Soften permanent compositing hints */
+  .hero-copy,
+  .hero-visual {
+    will-change: auto;
   }
+
+  .scroll-progress {
+    display: block;
+    will-change: transform;
+  }
+
+  /* Lighter aurora — keep motion, reduce blur cost */
+  .aurora {
+    display: block;
+  }
+
+  .aurora span {
+    filter: blur(28px);
+    opacity: 0.45;
+    animation-duration: 18s;
+  }
+
+  .aurora .a1,
+  .aurora .a2,
+  .aurora .a3 {
+    filter: blur(28px);
+  }
+
+  /* Marquees stay clipped and scrolling */
+  .marquee {
+    overflow: hidden;
+  }
+
   .marquee-track {
-    transform: none !important;
-    flex-wrap: wrap;
-    width: 100%;
-    justify-content: center;
+    display: flex;
+    flex-wrap: nowrap;
+    width: max-content;
+    will-change: transform;
+    animation-duration: 38s;
   }
-  .code-editor,
-  [data-parallax],
-  .project-card {
-    transform: none !important;
-    will-change: auto !important;
+
+  .marquee.reverse .marquee-track {
+    animation-duration: 44s;
+  }
+
+  /* Directional swing — shorter travel + slight rotation */
+  .js-anim .reveal[data-dir='left'] {
+    transform: translate3d(-18px, 8px, 0) rotate(-0.6deg);
+  }
+
+  .js-anim .reveal[data-dir='right'] {
+    transform: translate3d(18px, 8px, 0) rotate(0.6deg);
+  }
+
+  .js-anim .reveal[data-dir='left'].in-view,
+  .js-anim .reveal[data-dir='right'].in-view {
+    transform: none;
+  }
+
+  .js-anim .reveal {
+    transition-duration: 0.65s;
+  }
+
+  .js-anim .hero-status,
+  .js-anim .hero-title,
+  .js-anim .hero-description,
+  .js-anim .hero-meta,
+  .js-anim .hero-actions,
+  .js-anim .hero-visual {
+    transform: translateY(14px);
+  }
+
+  .js-anim body.is-ready .hero-status,
+  .js-anim body.is-ready .hero-title,
+  .js-anim body.is-ready .hero-description,
+  .js-anim body.is-ready .hero-meta,
+  .js-anim body.is-ready .hero-actions,
+  .js-anim body.is-ready .hero-visual {
+    transform: none;
+  }
+
+  /* Cards keep reveal transforms; drop heavy filters/shadows */
+  .project-card,
+  .highlight,
+  .skill-category,
+  .btn,
+  .code-editor {
     box-shadow: none !important;
+    filter: none;
+  }
+
+  .project-card,
+  .highlight {
+    will-change: auto;
+  }
+
+  .projects-stack .project-card {
+    box-shadow: none;
+  }
+
+  .code-editor {
+    transform: translateZ(0);
+  }
+
+  [data-parallax] {
+    will-change: transform;
+  }
+
+  .hero-copy,
+  .code-editor,
+  .marquee-track,
+  [data-parallax] {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .status-dot {
+    animation-duration: 3.2s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .split-word,
+  .project-card,
+  .hero-status,
+  .hero-title,
+  .hero-description,
+  .hero-meta,
+  .hero-actions,
+  .hero-visual,
+  .about-aside li {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

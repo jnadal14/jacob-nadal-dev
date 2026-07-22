@@ -71,23 +71,45 @@ function initNavigation() {
   );
 }
 
-// ===== PARALLAX ENGINE =====
-function initParallax() {
+// ===== PARALLAX + HERO SCROLL + PROGRESS (single rAF scroll path) =====
+function initScrollMotion() {
   if (prefersReducedMotion) return;
-  const els = Array.from(document.querySelectorAll('[data-parallax]'));
-  if (!els.length) return;
+  const parallaxEls = Array.from(document.querySelectorAll('[data-parallax]'));
+  const heroCopy = document.querySelector('.hero-copy');
+  const progressBar = document.getElementById('scroll-progress');
+  if (!parallaxEls.length && !heroCopy && !progressBar) return;
+
   let ticking = false;
   const update = () => {
+    const y = window.scrollY;
     const vh = window.innerHeight;
-    els.forEach((el) => {
-      const speed = parseFloat(el.dataset.parallax) || 0;
-      const rect = el.getBoundingClientRect();
-      const center = rect.top + rect.height / 2;
-      const delta = center - vh / 2;
-      el.style.transform = `translate3d(0, ${(-delta * speed).toFixed(1)}px, 0)`;
-    });
+
+    if (parallaxEls.length) {
+      parallaxEls.forEach((el) => {
+        const baseSpeed = parseFloat(el.dataset.parallax) || 0;
+        const speed = isTouch ? baseSpeed * 0.35 : baseSpeed;
+        const rect = el.getBoundingClientRect();
+        const center = rect.top + rect.height / 2;
+        const delta = center - vh / 2;
+        el.style.transform = `translate3d(0, ${(-delta * speed).toFixed(1)}px, 0)`;
+      });
+    }
+
+    if (heroCopy) {
+      const p = Math.min(y / 600, 1);
+      heroCopy.style.transform = `translateY(${y * 0.14}px)`;
+      heroCopy.style.opacity = String(1 - p * 0.9);
+    }
+
+    if (progressBar) {
+      const h = document.documentElement;
+      const scrolled = h.scrollTop / (h.scrollHeight - h.clientHeight || 1);
+      progressBar.style.transform = `scaleX(${Math.min(scrolled, 1)})`;
+    }
+
     ticking = false;
   };
+
   window.addEventListener(
     'scroll',
     () => {
@@ -100,31 +122,6 @@ function initParallax() {
   );
   window.addEventListener('resize', update);
   update();
-}
-
-// ===== HERO SCROLL-AWAY =====
-function initHeroScroll() {
-  if (prefersReducedMotion) return;
-  const copy = document.querySelector('.hero-copy');
-  if (!copy) return;
-  let ticking = false;
-  const update = () => {
-    const y = window.scrollY;
-    const p = Math.min(y / 600, 1);
-    copy.style.transform = `translateY(${y * 0.14}px)`;
-    copy.style.opacity = String(1 - p * 0.9);
-    ticking = false;
-  };
-  window.addEventListener(
-    'scroll',
-    () => {
-      if (!ticking) {
-        requestAnimationFrame(update);
-        ticking = true;
-      }
-    },
-    { passive: true }
-  );
 }
 
 // ===== HERO MOUSE PARALLAX =====
@@ -154,6 +151,9 @@ function initDirectionalReveals() {
   document.querySelectorAll('.entry.reveal').forEach((el, i) => {
     el.setAttribute('data-dir', i % 2 === 0 ? 'left' : 'right');
   });
+  document.querySelectorAll('.project-card.reveal').forEach((el, i) => {
+    el.setAttribute('data-dir', i % 2 === 0 ? 'left' : 'right');
+  });
 }
 
 // ===== MARQUEE (seamless loop) =====
@@ -163,20 +163,6 @@ function initMarquee() {
     if (!track) return;
     track.innerHTML += track.innerHTML;
   });
-}
-
-// ===== SCROLL PROGRESS =====
-function initScrollProgress() {
-  const bar = document.getElementById('scroll-progress');
-  if (!bar) return;
-  window.addEventListener(
-    'scroll',
-    throttle(() => {
-      const h = document.documentElement;
-      const scrolled = h.scrollTop / (h.scrollHeight - h.clientHeight || 1);
-      bar.style.transform = `scaleX(${Math.min(scrolled, 1)})`;
-    }, 16)
-  );
 }
 
 // ===== TEXT SCRAMBLE =====
@@ -613,6 +599,7 @@ function loadProjects() {
     card.style.setProperty('--i', i);
   });
   if (document.documentElement.classList.contains('js-anim')) {
+    initDirectionalReveals();
     initStaggerIndices();
     initReveal();
   } else {
@@ -714,7 +701,7 @@ function initAnalytics() {
   };
   if (isTouch) {
     // Way later on phones — never compete with first scroll
-    window.addEventListener('load', () => setTimeout(boot, 6000), { once: true });
+    window.addEventListener('load', () => setTimeout(boot, 9000), { once: true });
     return;
   }
   if ('requestIdleCallback' in window) {
@@ -732,8 +719,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const useAnim = document.documentElement.classList.contains('js-anim') && !prefersReducedMotion;
 
-  if (prefersReducedMotion || isTouch) {
-    // Mobile: paint + native scroll only. No observers, marquees, or scroll handlers.
+  if (prefersReducedMotion) {
     document.querySelectorAll('.reveal, .code-line').forEach((el) => el.classList.add('in-view', 'typed'));
     document.querySelectorAll('[data-count]').forEach((el) => {
       const target = el.getAttribute('data-count');
@@ -762,7 +748,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (useAnim) {
     initMarquee();
-    initScrollProgress();
     initSplitTitles();
     initCodeReveal();
     initDirectionalReveals();
@@ -770,11 +755,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initReveal();
     initTimeline();
     initScramble();
+    initScrollMotion();
     if (isFinePointer) {
       initMagnetic();
       initCursor();
-      initParallax();
-      initHeroScroll();
       initHeroMouse();
       initHighlightSpotlight();
     }

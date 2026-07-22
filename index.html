@@ -22,14 +22,42 @@
         var touch = window.matchMedia('(hover: none), (pointer: coarse), (max-width: 1024px)').matches;
         var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (touch) document.documentElement.classList.add('is-touch');
-        /* Only hide-then-animate on desktop — mobile paints content immediately */
-        if (!touch && !reduce) document.documentElement.classList.add('js-anim');
+        /* Hide-then-animate on every device unless reduced motion is requested */
+        if (!reduce) document.documentElement.classList.add('js-anim');
       } catch (e) {}
       if (!location.hash) window.scrollTo(0, 0);
+      /* If the deferred script never boots, reveal content anyway */
+      window.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () {
+          if (document.body.classList.contains('is-ready')) return;
+          document.body.classList.add('is-ready');
+          document.querySelectorAll('.reveal, .code-line').forEach(function (el) {
+            el.classList.add('in-view', 'typed');
+          });
+        }, 2800);
+      });
     })();
   </script>
+  <noscript>
+    <style>
+      .js-anim .reveal,
+      .js-anim .split-word,
+      .js-anim .reveal .skill-list span,
+      .js-anim .reveal .tag,
+      .js-anim .hero-status,
+      .js-anim .hero-title,
+      .js-anim .hero-description,
+      .js-anim .hero-meta,
+      .js-anim .hero-actions,
+      .js-anim .hero-visual,
+      .js-anim .about-aside.reveal li {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    </style>
+  </noscript>
   <!-- CSS first for fastest paint -->
-  <link rel="stylesheet" href="styles.min.css?v=5.3.0">
+  <link rel="stylesheet" href="styles.min.css?v=5.6.0">
   <!-- Fonts: desktop only, non-blocking. Mobile uses system fonts (instant). -->
   <script>
     (function () {
@@ -585,6 +613,6 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
   </button>
 
-  <script src="script.min.js?v=5.3.0" defer></script>
+  <script src="script.min.js?v=5.6.0" defer></script>
 </body>
 </html>
