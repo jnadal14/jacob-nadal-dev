@@ -648,10 +648,14 @@ iframe {
 .code-line {
   display: flex;
   gap: var(--space-md);
+  opacity: 1;
+  transform: none;
+}
+.js-anim .code-line {
   opacity: 0;
   transform: translateY(6px);
 }
-
+.js-anim .code-line.typed,
 .code-line.typed {
   opacity: 1;
   transform: none;
@@ -1339,13 +1343,18 @@ iframe {
 }
 
 /* ===== SCROLL REVEAL ===== */
+/* Default: visible (mobile paints instantly). .js-anim hides then reveals on desktop. */
 .reveal {
+  opacity: 1;
+  transform: none;
+}
+.js-anim .reveal {
   opacity: 0;
   transform: translateY(24px);
   transition: opacity 0.65s var(--ease-out), transform 0.65s var(--ease-out);
   transition-delay: calc(var(--i, 0) * 70ms);
 }
-
+.js-anim .reveal.in-view,
 .reveal.in-view {
   opacity: 1;
   transform: none;
@@ -1354,23 +1363,27 @@ iframe {
 /* word-by-word title reveal */
 .split-word {
   display: inline-block;
+}
+.js-anim .split-word {
   opacity: 0;
   transform: translateY(0.45em);
   transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out);
 }
-
+.js-anim .in-view .split-word,
 .in-view .split-word {
   opacity: 1;
   transform: none;
 }
 
 /* Staggered chip cascade inside revealed groups */
-.reveal .skill-list span,
-.reveal .tag {
+.js-anim .reveal .skill-list span,
+.js-anim .reveal .tag {
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 0.35s var(--ease-out), transform 0.35s var(--ease-out);
 }
+.js-anim .reveal.in-view .skill-list span,
+.js-anim .reveal.in-view .tag,
 .reveal.in-view .skill-list span,
 .reveal.in-view .tag {
   opacity: 1;
@@ -1387,28 +1400,38 @@ iframe {
 .reveal.in-view .skill-list span:nth-child(n + 9), .reveal.in-view .tag:nth-child(n + 9) { transition-delay: 0.4s; }
 
 /* ===== HERO ENTRANCE ===== */
+/* Visible by default; desktop js-anim can stage the entrance */
 .hero-status,
 .hero-title,
 .hero-description,
 .hero-meta,
 .hero-actions,
 .hero-visual {
+  opacity: 1;
+  transform: none;
+}
+.js-anim .hero-status,
+.js-anim .hero-title,
+.js-anim .hero-description,
+.js-anim .hero-meta,
+.js-anim .hero-actions,
+.js-anim .hero-visual {
   opacity: 0;
   transform: translateY(16px);
   transition: opacity 0.6s var(--ease-out), transform 0.6s var(--ease-out);
 }
-.hero-status { transition-delay: 0.05s; }
-.hero-title { transition-delay: 0.12s; }
-.hero-description { transition-delay: 0.2s; }
-.hero-meta { transition-delay: 0.28s; }
-.hero-actions { transition-delay: 0.34s; }
-.hero-visual { transition-delay: 0.18s; }
-body.is-ready .hero-status,
-body.is-ready .hero-title,
-body.is-ready .hero-description,
-body.is-ready .hero-meta,
-body.is-ready .hero-actions,
-body.is-ready .hero-visual {
+.js-anim .hero-status { transition-delay: 0.05s; }
+.js-anim .hero-title { transition-delay: 0.12s; }
+.js-anim .hero-description { transition-delay: 0.2s; }
+.js-anim .hero-meta { transition-delay: 0.28s; }
+.js-anim .hero-actions { transition-delay: 0.34s; }
+.js-anim .hero-visual { transition-delay: 0.18s; }
+.js-anim body.is-ready .hero-status,
+.js-anim body.is-ready .hero-title,
+.js-anim body.is-ready .hero-description,
+.js-anim body.is-ready .hero-meta,
+.js-anim body.is-ready .hero-actions,
+.js-anim body.is-ready .hero-visual {
   opacity: 1;
   transform: none;
 }
@@ -2604,67 +2627,97 @@ body.is-ready .scroll-cue { opacity: 1; }
 }
 
 /*
-  Touch / narrow — keep the cool motion, drop only the expensive bits:
-  grain, float orbs, scroll-linked parallax, heavy blur.
+  Touch / narrow — paint fast. Kill GPU-heavy blur, backdrop-filter,
+  animated aurora, and will-change. Keep light CSS motion only.
 */
 html.is-touch .grain,
-html.is-touch .float-orbs {
-  display: none !important;
-}
+html.is-touch .float-orbs,
+html.is-touch .scroll-progress,
 html.is-touch .snap-rail {
   display: none !important;
 }
 html.is-touch .navbar {
-  backdrop-filter: saturate(160%) blur(8px);
-  -webkit-backdrop-filter: saturate(160%) blur(8px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
 }
-/* Faster, shorter reveals so mobile feels snappy not sluggish */
-html.is-touch .reveal {
-  transform: translateY(14px);
-  transition-duration: 0.45s;
-  transition-delay: calc(var(--i, 0) * 40ms);
-}
-html.is-touch .split-word {
-  transition-duration: 0.4s;
-}
-html.is-touch .hero-status,
-html.is-touch .hero-title,
-html.is-touch .hero-description,
-html.is-touch .hero-meta,
-html.is-touch .hero-actions,
-html.is-touch .hero-visual {
-  transform: translateY(10px);
-  transition-duration: 0.45s;
-}
-/* Softer aurora — still animated depth, less GPU */
-html.is-touch .aurora span {
-  filter: blur(48px);
-  opacity: 0.22;
-  animation-duration: 22s;
-}
-html.is-touch .code-editor {
-  transform: none;
+/* Static soft glow — no filter:blur (very expensive on mobile GPUs) */
+html.is-touch .aurora {
   will-change: auto;
 }
+html.is-touch .aurora span {
+  filter: none !important;
+  animation: none !important;
+  will-change: auto !important;
+  opacity: 0.18;
+  background: radial-gradient(circle, var(--accent), transparent 68%) !important;
+}
+html.is-touch .aurora .a2 {
+  background: radial-gradient(circle, #8b5cf6, transparent 68%) !important;
+}
+html.is-touch .aurora .a3 {
+  background: radial-gradient(circle, #06b6d4, transparent 68%) !important;
+  opacity: 0.12;
+}
+html.is-touch .section-alt::before,
+html.is-touch .section-alt::after,
+html.is-touch .hero-visual::before,
+html.is-touch .fp-wipe {
+  display: none !important;
+}
+html.is-touch .hero-name {
+  animation: none !important;
+}
+html.is-touch .hero-copy,
+html.is-touch .hero-visual,
+html.is-touch .code-editor,
 html.is-touch [data-parallax] {
-  /* JS parallax off on touch; CSS aurora carries the depth */
   transform: none !important;
   will-change: auto !important;
 }
 html.is-touch .marquee-track {
-  animation-duration: 42s;
+  animation-duration: 48s;
+}
+/* Instant text — no webfont wait on phones */
+html.is-touch,
+html.is-touch body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+html.is-touch .hero-role,
+html.is-touch .eyebrow,
+html.is-touch .code-editor,
+html.is-touch .editor-body,
+html.is-touch .highlight-value,
+html.is-touch .project-index {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
 
 @media (max-width: 1024px), (hover: none) {
   .grain,
-  .float-orbs {
+  .float-orbs,
+  .scroll-progress {
     display: none !important;
   }
   .navbar {
-    backdrop-filter: saturate(160%) blur(8px);
-    -webkit-backdrop-filter: saturate(160%) blur(8px);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
   }
-  .code-editor {
-    transform: none;
+  .aurora span {
+    filter: none !important;
+    animation: none !important;
+  }
+  .section-alt::before,
+  .section-alt::after,
+  .hero-visual::before {
+    display: none !important;
+  }
+  .hero-name {
+    animation: none !important;
+  }
+  .code-editor,
+  [data-parallax] {
+    transform: none !important;
+    will-change: auto !important;
   }
 }
