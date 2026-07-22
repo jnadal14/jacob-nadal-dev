@@ -27,7 +27,7 @@
   {
     "kicker": "Agentic NLP · Safety",
     "title": "Agentic Moderation & Detoxification Pipeline",
-    "desc": "An agentic pipeline that detects language, translates, classifies sentiment and toxicity, and conditionally detoxifies text — using LangDetect, UBC NLP Toucan, and IBM Granite.",
+    "desc": "An agentic pipeline that detects language, translates, classifies sentiment and toxicity, and conditionally detoxifies text using LangDetect, UBC NLP Toucan, and IBM Granite.",
     "impact": "Built multilingual routing that only invokes detoxification when the earlier classifiers show it is needed.",
     "metric": "0.65 sentiment accuracy · 7.7 / 10 detox quality",
     "flow": ["Detect", "Route", "Detoxify"],
