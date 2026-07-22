@@ -42,12 +42,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Fewer weights = faster first paint on mobile -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=4.9.0">
+  <link rel="stylesheet" href="styles.css?v=5.0.0">
   <script>
     (function () {
       try {
-        var coarse = window.matchMedia('(hover: none), (pointer: coarse), (max-width: 1024px)').matches;
-        if (coarse) document.documentElement.classList.add('is-lite');
+        /* Touch/narrow: lighter effects, NOT zero motion */
+        var touch = window.matchMedia('(hover: none), (pointer: coarse), (max-width: 1024px)').matches;
+        if (touch) document.documentElement.classList.add('is-touch');
       } catch (e) {}
     })();
   </script>
@@ -147,7 +148,7 @@
           </h1>
           <p class="hero-description">
             I build machine learning pipelines, dashboards, and LLM apps that turn messy data into
-            decisions backed by a maths and engineering foundation.
+            decisions backed by a math and engineering foundation.
           </p>
           <div class="hero-meta">
             <span class="hero-meta-item">
@@ -601,6 +602,6 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
   </button>
 
-  <script src="script.js?v=4.9.0" defer></script>
+  <script src="script.js?v=5.0.0" defer></script>
 </body>
 </html>

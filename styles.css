@@ -2603,90 +2603,68 @@ body.is-ready .scroll-cue { opacity: 1; }
   }
 }
 
-/* Lite mode (set in <head>) + touch/narrow: instant content, minimal GPU cost */
-html.is-lite .grain,
-html.is-lite .float-orbs,
-html.is-lite .scroll-progress,
-html.is-lite .aurora,
-html.is-lite .snap-rail {
+/*
+  Touch / narrow — keep the cool motion, drop only the expensive bits:
+  grain, float orbs, scroll-linked parallax, heavy blur.
+*/
+html.is-touch .grain,
+html.is-touch .float-orbs {
   display: none !important;
 }
-html.is-lite .reveal,
-html.is-lite .split-word,
-html.is-lite .code-line,
-html.is-lite .reveal .skill-list span,
-html.is-lite .reveal .tag,
-html.is-lite .hero-status,
-html.is-lite .hero-title,
-html.is-lite .hero-description,
-html.is-lite .hero-meta,
-html.is-lite .hero-actions,
-html.is-lite .hero-visual,
-html.is-lite .scroll-cue {
-  opacity: 1 !important;
-  transform: none !important;
-  transition: none !important;
-  animation: none !important;
+html.is-touch .snap-rail {
+  display: none !important;
 }
-html.is-lite .marquee-track {
-  animation: none !important;
-  transform: none !important;
+html.is-touch .navbar {
+  backdrop-filter: saturate(160%) blur(8px);
+  -webkit-backdrop-filter: saturate(160%) blur(8px);
 }
-html.is-lite .marquee,
-html.is-lite .marquee-band {
-  -webkit-mask-image: none;
-  mask-image: none;
+/* Faster, shorter reveals so mobile feels snappy not sluggish */
+html.is-touch .reveal {
+  transform: translateY(14px);
+  transition-duration: 0.45s;
+  transition-delay: calc(var(--i, 0) * 40ms);
 }
-html.is-lite .code-editor,
-html.is-lite [data-parallax],
-html.is-lite .hero-copy,
-html.is-lite .hero-visual {
+html.is-touch .split-word {
+  transition-duration: 0.4s;
+}
+html.is-touch .hero-status,
+html.is-touch .hero-title,
+html.is-touch .hero-description,
+html.is-touch .hero-meta,
+html.is-touch .hero-actions,
+html.is-touch .hero-visual {
+  transform: translateY(10px);
+  transition-duration: 0.45s;
+}
+/* Softer aurora — still animated depth, less GPU */
+html.is-touch .aurora span {
+  filter: blur(48px);
+  opacity: 0.22;
+  animation-duration: 22s;
+}
+html.is-touch .code-editor {
+  transform: none;
+  will-change: auto;
+}
+html.is-touch [data-parallax] {
+  /* JS parallax off on touch; CSS aurora carries the depth */
   transform: none !important;
   will-change: auto !important;
 }
-html.is-lite .navbar {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background: var(--bg);
-}
-html.is-lite body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+html.is-touch .marquee-track {
+  animation-duration: 42s;
 }
 
 @media (max-width: 1024px), (hover: none) {
   .grain,
-  .float-orbs,
-  .scroll-progress,
-  .aurora {
+  .float-orbs {
     display: none !important;
   }
-  .reveal,
-  .split-word,
-  .code-line,
-  .reveal .skill-list span,
-  .reveal .tag,
-  .hero-status,
-  .hero-title,
-  .hero-description,
-  .hero-meta,
-  .hero-actions,
-  .hero-visual,
-  .scroll-cue {
-    opacity: 1 !important;
-    transform: none !important;
-    transition: none !important;
-    animation: none !important;
-  }
-  .marquee-track {
-    animation: none !important;
-  }
   .navbar {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    background: var(--bg);
+    backdrop-filter: saturate(160%) blur(8px);
+    -webkit-backdrop-filter: saturate(160%) blur(8px);
   }
   .code-editor {
-    transform: none !important;
-    will-change: auto !important;
+    transform: none;
   }
 }

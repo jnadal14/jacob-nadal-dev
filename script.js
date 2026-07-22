@@ -1,10 +1,10 @@
 // ===== HELPERS =====
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-const isLite =
-  document.documentElement.classList.contains('is-lite') ||
+const isTouch =
+  document.documentElement.classList.contains('is-touch') ||
   window.matchMedia('(hover: none), (pointer: coarse), (max-width: 1024px)').matches;
-if (isLite) document.documentElement.classList.add('is-lite');
+if (isTouch) document.documentElement.classList.add('is-touch');
 
 function throttle(fn, limit) {
   let waiting = false;
@@ -251,6 +251,8 @@ function initCodeReveal() {
   }
   const caret = document.createElement('span');
   caret.className = 'editor-caret';
+  const stepMs = isTouch ? 55 : 120;
+  const startMs = isTouch ? 180 : 400;
 
   let i = 0;
   const revealNext = () => {
@@ -266,9 +268,9 @@ function initCodeReveal() {
     }
     line.querySelector('.code-txt').appendChild(caret);
     i++;
-    setTimeout(revealNext, 120);
+    setTimeout(revealNext, stepMs);
   };
-  setTimeout(revealNext, 400);
+  setTimeout(revealNext, startMs);
 }
 
 // ===== COUNT UP =====
@@ -522,13 +524,12 @@ async function loadProjects() {
   const grid = document.getElementById('projects-grid');
   if (!grid) return;
   try {
-    // Cacheable fetch — avoid Date.now()/no-store which forces a network hit every visit
-    const response = await fetch('projects.json?v=4.9.0');
+    const response = await fetch('projects.json?v=5.0.0');
     const projects = await response.json();
     grid.innerHTML = projects
       .map(
         (project, idx) => `
-      <article class="project-card reveal${isLite ? ' in-view' : ''}">
+      <article class="project-card reveal">
         <div class="project-card-main">
           <div class="project-index">0${idx + 1} / 0${projects.length}</div>
           <h3 class="project-title">${project.title}</h3>
@@ -562,14 +563,12 @@ async function loadProjects() {
       )
       .join('');
 
-    if (!isLite) {
-      grid.querySelectorAll('.project-card').forEach((card, i) => {
-        card.style.setProperty('--i', i);
-      });
-      initStaggerIndices();
-      initReveal();
-      if (isFinePointer) bindCardSpotlight(grid);
-    }
+    grid.querySelectorAll('.project-card').forEach((card, i) => {
+      card.style.setProperty('--i', i);
+    });
+    initStaggerIndices();
+    initReveal();
+    if (isFinePointer) bindCardSpotlight(grid);
   } catch (error) {
     console.error('Error loading projects:', error);
     grid.innerHTML =
@@ -661,8 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateYear();
   cleanupServiceWorker();
 
-  if (isLite || prefersReducedMotion) {
-    // Mobile / lite: show everything immediately — no reveal delays or typing
+  if (prefersReducedMotion) {
     document.querySelectorAll('.reveal, .code-line').forEach((el) => el.classList.add('in-view', 'typed'));
     document.querySelectorAll('[data-count]').forEach((el) => {
       const target = el.getAttribute('data-count');
@@ -675,7 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // Desktop polish path
+  // Shared motion (desktop + mobile): reveals, marquees, hero entrance, code typing
   initMarquee();
   initScrollProgress();
   initSplitTitles();
@@ -683,20 +681,22 @@ document.addEventListener('DOMContentLoaded', () => {
   initDirectionalReveals();
   initStaggerIndices();
   initReveal();
-  if (isFinePointer && !prefersReducedMotion) {
-    initScramble();
+  initTimeline();
+  initScramble();
+
+  // Desktop-only heavy effects (these are what made phones feel laggy)
+  if (isFinePointer && !isTouch) {
     initMagnetic();
     initCursor();
     initParallax();
     initHeroScroll();
     initHeroMouse();
-    initTimeline();
     initHighlightSpotlight();
   }
 
   requestAnimationFrame(() => {
     document.body.classList.remove('preload');
-    setTimeout(() => document.body.classList.add('is-ready'), 60);
+    setTimeout(() => document.body.classList.add('is-ready'), isTouch ? 40 : 60);
     initScrollToTop();
   });
 });
