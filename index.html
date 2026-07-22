@@ -25,11 +25,11 @@
         /* Only hide-then-animate on desktop — mobile paints content immediately */
         if (!touch && !reduce) document.documentElement.classList.add('js-anim');
       } catch (e) {}
-      window.scrollTo(0, 0);
+      if (!location.hash) window.scrollTo(0, 0);
     })();
   </script>
   <!-- CSS first for fastest paint -->
-  <link rel="stylesheet" href="styles.min.css?v=5.2.0">
+  <link rel="stylesheet" href="styles.min.css?v=5.3.0">
   <!-- Fonts: desktop only, non-blocking. Mobile uses system fonts (instant). -->
   <script>
     (function () {
@@ -585,6 +585,6 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
   </button>
 
-  <script src="script.min.js?v=5.2.0" defer></script>
+  <script src="script.min.js?v=5.3.0" defer></script>
 </body>
 </html>

@@ -25,15 +25,13 @@ function initNavigation() {
   const navLinks = document.getElementById('nav-links');
   const links = document.querySelectorAll('.nav-link');
 
-  // Skip scroll-driven nav chrome on touch — offsetTop loops stutter iOS scroll
+  // No scroll listeners on touch — they stutter iOS compositing
   if (!isTouch && navbar) {
     window.addEventListener(
       'scroll',
       throttle(() => navbar.classList.toggle('scrolled', window.scrollY > 10), 100),
       { passive: true }
     );
-  } else if (navbar) {
-    navbar.classList.add('scrolled');
   }
 
   if (navToggle && navLinks) {
@@ -386,6 +384,9 @@ function initHighlightSpotlight() {
 
 // ===== SECTION RAIL + IN-PAGE NAV (no scroll snap) =====
 function initSectionNav() {
+  // Touch: let the browser handle #hash jumps — no JS scroll hijacking
+  if (isTouch) return;
+
   const panels = Array.from(document.querySelectorAll('.snap-panel'));
   const railItems = Array.from(document.querySelectorAll('.snap-rail-item'));
   if (!panels.length) return;
@@ -404,10 +405,9 @@ function initSectionNav() {
   const scrollToPanel = (panel) => {
     if (!panel) return;
     const top = panel.getBoundingClientRect().top + window.scrollY - headerOffset();
-    // Instant jump on touch — smooth scroll fights the compositor on iOS
     window.scrollTo({
       top: Math.max(0, top),
-      behavior: prefersReducedMotion || isTouch ? 'auto' : 'smooth',
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
     });
     setActiveById(panel.id);
   };
@@ -430,12 +430,6 @@ function initSectionNav() {
     }
   });
 
-  // Rail sync is desktop-only (rail hidden on touch; getBoundingClientRect on scroll = jank)
-  if (isTouch) {
-    setActiveById(panels[0]?.id);
-    return;
-  }
-
   const syncRail = throttle(() => {
     let bestId = panels[0]?.id;
     let bestDist = Infinity;
@@ -453,21 +447,24 @@ function initSectionNav() {
   setActiveById(panels[0]?.id);
 }
 
-// ===== FORCE TOP ON LOAD / REFRESH (all devices) =====
+// ===== FORCE TOP ON LOAD / REFRESH =====
 function initScrollToTop() {
   try {
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   } catch (e) {}
+  // On touch: one quiet reset only — never fight the user mid-scroll
+  if (isTouch) {
+    if (!location.hash) window.scrollTo(0, 0);
+    return;
+  }
   try {
     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   } catch (e) {}
   const toTop = () => window.scrollTo(0, 0);
   toTop();
   requestAnimationFrame(toTop);
-  // Fewer resets on touch so early user scroll isn't yanked back to top
-  const delays = isTouch ? [0, 80] : [0, 50, 150, 400];
-  delays.forEach((ms) => setTimeout(toTop, ms));
-  if (!isTouch) window.addEventListener('load', toTop, { once: true });
+  [0, 50, 150, 400].forEach((ms) => setTimeout(toTop, ms));
+  window.addEventListener('load', toTop, { once: true });
 }
 
 // ===== MAGNETIC BUTTONS =====
@@ -627,22 +624,14 @@ function loadProjects() {
 // ===== BACK TO TOP =====
 function initBackToTop() {
   const btn = document.getElementById('back-to-top');
-  if (!btn) return;
-  if (!isTouch) {
-    window.addEventListener(
-      'scroll',
-      throttle(() => btn.classList.toggle('visible', window.scrollY > 600), 100),
-      { passive: true }
-    );
-  } else {
-    // Show after idle check — no scroll listener on mobile
-    const reveal = () => {
-      if (window.scrollY > 700) btn.classList.add('visible');
-    };
-    window.addEventListener('scroll', throttle(reveal, 400), { passive: true });
-  }
+  if (!btn || isTouch) return; // hidden on touch; zero scroll listeners
+  window.addEventListener(
+    'scroll',
+    throttle(() => btn.classList.toggle('visible', window.scrollY > 600), 100),
+    { passive: true }
+  );
   btn.addEventListener('click', () =>
-    window.scrollTo({ top: 0, behavior: isTouch || prefersReducedMotion ? 'auto' : 'smooth' })
+    window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' })
   );
 }
 
@@ -723,6 +712,11 @@ function initAnalytics() {
     s.src = 'https://www.googletagmanager.com/gtag/js?id=G-M46WFFM9WL';
     document.head.appendChild(s);
   };
+  if (isTouch) {
+    // Way later on phones — never compete with first scroll
+    window.addEventListener('load', () => setTimeout(boot, 6000), { once: true });
+    return;
+  }
   if ('requestIdleCallback' in window) {
     requestIdleCallback(boot, { timeout: 4000 });
   } else {
@@ -734,17 +728,12 @@ document.addEventListener('DOMContentLoaded', () => {
   initScrollToTop();
   initNavigation();
   loadProjects();
-  initBackToTop();
-  initContactForm();
-  initSectionNav();
   updateYear();
-  cleanupServiceWorker();
-  initAnalytics();
 
   const useAnim = document.documentElement.classList.contains('js-anim') && !prefersReducedMotion;
 
   if (prefersReducedMotion || isTouch) {
-    // Mobile: zero continuous motion / observers — native scroll only
+    // Mobile: paint + native scroll only. No observers, marquees, or scroll handlers.
     document.querySelectorAll('.reveal, .code-line').forEach((el) => el.classList.add('in-view', 'typed'));
     document.querySelectorAll('[data-count]').forEach((el) => {
       const target = el.getAttribute('data-count');
@@ -754,8 +743,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const timeline = document.getElementById('experience-timeline');
     if (timeline) timeline.classList.add('in-view');
     document.body.classList.add('is-ready');
+    // Defer non-critical work until after first paint / idle
+    const later = () => {
+      initContactForm();
+      cleanupServiceWorker();
+      initAnalytics();
+    };
+    if ('requestIdleCallback' in window) requestIdleCallback(later, { timeout: 3000 });
+    else setTimeout(later, 1200);
     return;
   }
+
+  initBackToTop();
+  initContactForm();
+  initSectionNav();
+  cleanupServiceWorker();
+  initAnalytics();
 
   if (useAnim) {
     initMarquee();

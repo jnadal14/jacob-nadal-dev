@@ -2493,9 +2493,7 @@ body.is-ready .scroll-cue { opacity: 1; }
 }
 
 .hero.snap-panel {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  display: block;
   padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px) + var(--space-xl));
   padding-bottom: var(--space-2xl);
 }
@@ -2627,21 +2625,28 @@ body.is-ready .scroll-cue { opacity: 1; }
 }
 
 /*
-  Touch / narrow — buttery native scroll.
-  Kill continuous animations, fixed paint layers, blur, and scroll-fighting chrome.
+  Touch / narrow — native scroll only.
+  Sticky nav (in flow) so it never covers the hero. No fixed paint layers,
+  continuous animations, gradient-clip text, or content-visibility jumps.
 */
 html.is-touch {
   scroll-behavior: auto !important;
+  scroll-padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px) + 8px);
 }
 html.is-touch,
 html.is-touch body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  overscroll-behavior-y: none;
 }
 html.is-touch body {
   transition: none !important;
 }
-/* Fixed grid + glow layers are a major iOS scroll stutter source */
+html.is-touch *,
+html.is-touch *::before,
+html.is-touch *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
 html.is-touch body::before,
 html.is-touch .grain,
 html.is-touch .float-orbs,
@@ -2650,32 +2655,47 @@ html.is-touch .snap-rail,
 html.is-touch .aurora,
 html.is-touch .scroll-cue,
 html.is-touch .fp-wipe,
+html.is-touch .back-to-top,
 html.is-touch .section-alt::before,
 html.is-touch .section-alt::after,
-html.is-touch .hero-visual::before {
+html.is-touch .hero-visual::before,
+html.is-touch .hero::before {
   display: none !important;
-  content: none !important;
-  animation: none !important;
 }
+/* In-flow sticky nav — no overlap with landing content */
 html.is-touch .navbar {
+  position: sticky;
+  top: 0;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   background: var(--bg);
-  transition: none !important;
+  border-bottom: 1px solid var(--border);
   box-shadow: none;
 }
-html.is-touch .navbar.scrolled {
-  border-bottom-color: var(--border);
-  box-shadow: none;
+html.is-touch .hero,
+html.is-touch .hero.snap-panel {
+  display: block !important;
+  justify-content: flex-start !important;
+  /* Nav is in document flow now — only need normal section padding */
+  padding-top: var(--space-xl) !important;
+  min-height: 0 !important;
 }
-/* Freeze marquees — infinite CSS transforms fight the scroll compositor */
-html.is-touch .marquee-track,
-html.is-touch .marquee-band .marquee-track,
-html.is-touch .status-dot,
-html.is-touch .editor-caret,
-html.is-touch .scroll-cue-line,
-html.is-touch .hero-name {
-  animation: none !important;
+/* Solid text — background-clip gradients are expensive while scrolling */
+html.is-touch .hero-name,
+html.is-touch .eyebrow {
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: var(--ink-900) !important;
+  color: var(--ink-900) !important;
+}
+html.is-touch .logo-mark {
+  background: var(--ink-900) !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+html.is-touch .btn-primary {
+  background: var(--accent) !important;
 }
 html.is-touch .marquee-track {
   transform: none !important;
@@ -2700,28 +2720,19 @@ html.is-touch .hero-visual,
 html.is-touch .code-editor,
 html.is-touch [data-parallax],
 html.is-touch .project-card,
-html.is-touch .highlight {
-  transform: none !important;
-  will-change: auto !important;
-  transition: none !important;
-}
+html.is-touch .highlight,
 html.is-touch .timeline::before,
 html.is-touch .timeline .entry::before {
-  transition: none !important;
   transform: none !important;
+  will-change: auto !important;
+  filter: none !important;
 }
-html.is-touch .code-editor {
-  box-shadow: var(--shadow-sm);
-}
+html.is-touch .code-editor,
 html.is-touch .project-card,
 html.is-touch .highlight,
-html.is-touch .skill-category {
-  box-shadow: none;
-}
-/* Skip offscreen paint work while scrolling */
-html.is-touch .section.snap-panel {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 720px;
+html.is-touch .skill-category,
+html.is-touch .btn {
+  box-shadow: none !important;
 }
 html.is-touch .hero-role,
 html.is-touch .eyebrow,
@@ -2739,16 +2750,34 @@ html.is-touch .project-index {
   .scroll-progress,
   .aurora,
   .scroll-cue,
+  .back-to-top,
   .section-alt::before,
   .section-alt::after,
-  .hero-visual::before {
+  .hero-visual::before,
+  .hero::before {
     display: none !important;
   }
   .navbar {
+    position: sticky;
+    top: 0;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    box-shadow: none;
     transition: none !important;
+  }
+  .hero,
+  .hero.snap-panel {
+    display: block !important;
+    padding-top: var(--space-xl) !important;
+    min-height: 0 !important;
+  }
+  .hero-name,
+  .eyebrow {
+    background: none !important;
+    -webkit-text-fill-color: var(--ink-900) !important;
+    color: var(--ink-900) !important;
   }
   .marquee-track,
   .status-dot,
@@ -2757,15 +2786,15 @@ html.is-touch .project-index {
   }
   .marquee-track {
     transform: none !important;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
   }
   .code-editor,
   [data-parallax],
   .project-card {
     transform: none !important;
     will-change: auto !important;
-  }
-  .section.snap-panel {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 720px;
+    box-shadow: none !important;
   }
 }
